@@ -1,0 +1,6 @@
+.vs
+bin
+obj
+*.cache
+*.editorconfig
+desktop.ini
