@@ -6,37 +6,36 @@ namespace snake
 {
     enum MenuOptions
     {
-        PLAY,
-        HIGHSCORES,
-        QUIT
+        Play,
+        Highscores,
+        Quit
     }
 
     class Program
     {
-        const int gameWidth = 80;
-        const int gameHeight = 20;
+        const int GameWidth = 80;
+        const int GameHeight = 20;
         void EntryPoint( ) {
-            setupGame( );
-            Console.SetCursorPosition( 0, gameHeight + 1 );
+            SetupGame( );
+            Console.SetCursorPosition( 0, GameHeight + 1 );
             Console.ForegroundColor = ConsoleColor.Gray;
-            return;
         }
 
 
-        void setupGame( ) {
+        void SetupGame( ) {
             Console.Title = "Snake";
             drawBorder( );
-            mainMenu( );
+            MainMenu( );
         }
 
-        void mainMenu( ) {
+        void MainMenu( ) {
             const string greetingText = "Welcome to Snake! What's your name?";
             Coordinate greetingLocation = new Coordinate {
-                x = gameWidth / 2 - greetingText.Length / 2,
-                y = gameHeight / 3
+                x = GameWidth / 2 - greetingText.Length / 2,
+                y = GameHeight / 3
             };
 
-            var selectedMenu = MenuOptions.PLAY;
+            var selectedMenu = MenuOptions.Play;
             DrawMenuOptions( greetingLocation, ref selectedMenu );
 
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -45,11 +44,11 @@ namespace snake
 
             Console.ForegroundColor = ConsoleColor.White;
             const string nameString = "Name: ";
-            Console.SetCursorPosition( gameWidth / 2 - nameString.Length, greetingLocation.y + 2 );
+            Console.SetCursorPosition( GameWidth / 2 - nameString.Length, greetingLocation.y + 2 );
             Console.Write( nameString );
-            
+
             var name = Console.ReadLine( );
-            
+
 
             bool waitingForSelection = true;
             while ( waitingForSelection ) {
@@ -75,21 +74,41 @@ namespace snake
 
             ClearGameBoard( );
             switch ( selectedMenu ) {
-                case MenuOptions.QUIT:
-                    Environment.Exit(0);
+                case MenuOptions.Quit:
+                    Environment.Exit( 0 );
                     break;
-                case MenuOptions.PLAY:
-                    GameLoop();
+                case MenuOptions.Play:
+                    GameLoop( );
                     break;
             }
         }
 
-        void GameLoop()
-        {
-            var snake = new Snake( gameWidth, gameHeight ); ;
+        void GameLoop( ) {
+            var snake = new Snake( GameWidth, GameHeight ); ;
+            // Game thread
+            new System.Threading.Tasks.Task( ( ) => { 
+                while ( true ) {
+                    snake.Tick( );
+                    Thread.Sleep( 1000 / 15 );
+                }
+            } ).Start( );
+
             while ( true ) {
-                snake.Tick( );
-                Thread.Sleep( 1000 / 15 );
+                var key = Console.ReadKey( );
+                switch ( key.Key ) {
+                    case ConsoleKey.DownArrow:
+                        snake.OnDirectionEvent(DirectionEvent.DOWN);
+                        break;
+                    case ConsoleKey.UpArrow:
+                        snake.OnDirectionEvent( DirectionEvent.UP );
+                        break;
+                    case ConsoleKey.RightArrow:
+                        snake.OnDirectionEvent( DirectionEvent.RIGHT );
+                        break;
+                    case ConsoleKey.LeftArrow:
+                        snake.OnDirectionEvent( DirectionEvent.LEFT );
+                        break;
+                }
             }
         }
 
@@ -97,13 +116,13 @@ namespace snake
 
         }
 
-        private MenuOptions _lastMenuSelection = MenuOptions.QUIT;
+        private MenuOptions _lastMenuSelection = MenuOptions.Quit;
         void DrawMenuOptions( Coordinate greetingLocation, ref MenuOptions selectedMenu ) {
             // Keeps the selected menu in range
             while ( !Enum.IsDefined( typeof( MenuOptions ), selectedMenu ) ) {
                 if ( (int)selectedMenu < 0 )
                     selectedMenu++;
-                else if ( (int)selectedMenu > (int)MenuOptions.QUIT ) // QUIT is the back of MenuOptions
+                else if ( (int)selectedMenu > (int)MenuOptions.Quit ) // Quit is the back of MenuOptions
                     selectedMenu--;
             }
 
@@ -113,18 +132,18 @@ namespace snake
 
             Console.ForegroundColor = ConsoleColor.White;
 
-            
-            string playString = $"[{( selectedMenu == MenuOptions.PLAY ? '*' : ' ' )}] PLAY";
+
+            string playString = $"[{( selectedMenu == MenuOptions.Play ? '*' : ' ' )}] PLAY";
             int offsetFromCenter = playString.Length / 2;
-            Console.SetCursorPosition( gameWidth / 2 - offsetFromCenter, greetingLocation.y + 4 );
+            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, greetingLocation.y + 4 );
             Console.Write( playString );
 
-            string highScoreString = $"[{( selectedMenu == MenuOptions.HIGHSCORES ? '*' : ' ' )}] HIGHSCORES";
-            Console.SetCursorPosition( gameWidth / 2 - offsetFromCenter, greetingLocation.y + 5 );
+            string highScoreString = $"[{( selectedMenu == MenuOptions.Highscores ? '*' : ' ' )}] HIGHSCORES";
+            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, greetingLocation.y + 5 );
             Console.Write( highScoreString );
 
-            string quitString = $"[{( selectedMenu == MenuOptions.QUIT ? '*' : ' ' )}] QUIT";
-            Console.SetCursorPosition( gameWidth / 2 - offsetFromCenter, greetingLocation.y + 6 );
+            string quitString = $"[{( selectedMenu == MenuOptions.Quit ? '*' : ' ' )}] QUIT";
+            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, greetingLocation.y + 6 );
             Console.Write( quitString );
             _lastMenuSelection = selectedMenu;
         }
@@ -132,20 +151,20 @@ namespace snake
         void drawBorder( ) {
             Console.Clear( );
             Console.ForegroundColor = ConsoleColor.DarkCyan;
-            for ( int y = 0; y <= gameHeight; y++ ) {
+            for ( int y = 0; y <= GameHeight; y++ ) {
                 bool onTop = y == 0;
-                bool onBottom = y == gameHeight;
-                for ( int x = 0; x <= gameWidth; x++ ) {
+                bool onBottom = y == GameHeight;
+                for ( int x = 0; x <= GameWidth; x++ ) {
                     bool onEdge = ( onTop && x == 0 ) ||
-                                  ( onTop && x == gameWidth ) ||
+                                  ( onTop && x == GameWidth ) ||
                                   ( onBottom && x == 0 ) ||
-                                  ( onBottom && x == gameWidth );
+                                  ( onBottom && x == GameWidth );
                     if ( onEdge ) {
                         Console.Write( '+' );
                         continue;
                     }
 
-                    if ( x == 0 || x == gameWidth || onTop || onBottom ) {
+                    if ( x == 0 || x == GameWidth || onTop || onBottom ) {
                         Console.Write( '#' );
                         continue;
                     }

@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace snake
 {
@@ -10,18 +7,26 @@ namespace snake
     {
         public int x;
         public int y;
-        public static Coordinate operator +(Coordinate a, Coordinate b) {
+        public static Coordinate operator +( Coordinate a, Coordinate b ) {
             a.x += b.x;
             a.y += b.y;
             return a;
         }
 
-        public static bool operator ==(Coordinate a, Coordinate b) {
+        public static bool operator ==( Coordinate a, Coordinate b ) {
             return a.x == b.x && a.y == b.y;
         }
-        public static bool operator !=(Coordinate a, Coordinate b) {
-            return !(a == b);
+        public static bool operator !=( Coordinate a, Coordinate b ) {
+            return !( a == b );
         }
+    }
+
+    enum DirectionEvent
+    {
+        UP,
+        RIGHT,
+        DOWN,
+        LEFT
     }
 
     class Snake
@@ -34,37 +39,58 @@ namespace snake
         private Coordinate _currentHeadPosition;
         private int _gameWidth;
         private int _gameHeight;
-        public Snake(int gameWidth, int gameHeight) {
+        public Snake( int gameWidth, int gameHeight ) {
             _snakeLength = 3;
-            _currentAcceleration = new Coordinate { x = 1, y = 0 };
+            _currentAcceleration = new Coordinate { x = 1, y = 0 }; // init acceleration goes right for now, todo: make 0 :^)
             _gameHeight = gameHeight;
             _gameWidth = gameWidth;
+
+            _snakeGrids = new List<Coordinate>( );
+            //_drawnGrids = new List<Coordinate>(); // needed to be initialized so that DrawSnake foreach doesn't crash on first iteration
         }
 
-        public void Tick() {
+        public void Tick( ) {
             _currentHeadPosition += _currentAcceleration;
-
-
-            DrawSnake();
+            DrawSnake( );
         }
 
-        private void DrawSnake() {
+        public void OnDirectionEvent( DirectionEvent e ) {
+            switch ( e ) {
+                case DirectionEvent.DOWN:
+                    _currentAcceleration.x = 0;
+                    _currentAcceleration.y = 1;
+                    break;
+                case DirectionEvent.LEFT:
+                    _currentAcceleration.x = -1;
+                    _currentAcceleration.y = 0;
+                    break;
+                case DirectionEvent.RIGHT:
+                    _currentAcceleration.x = 1;
+                    _currentAcceleration.y = 0;
+                    break;
+                case DirectionEvent.UP:
+                    _currentAcceleration.x = 0;
+                    _currentAcceleration.y = -1;
+                    break;
+            }
+        }
 
-            foreach (var drawnGrid in _drawnGrids)
-            {
-                if (_snakeGrids.Exists(snakeGrid => snakeGrid == drawnGrid)) // still valid
+        private void DrawSnake( ) {
+
+            foreach ( var drawnGrid in _drawnGrids ) {
+                if ( _snakeGrids.Exists( snakeGrid => snakeGrid == drawnGrid ) ) // still valid
                     continue;
 
-                Console.SetCursorPosition(drawnGrid.x + 1, drawnGrid.y + 1);
-                Console.Write(" ");
+                Console.SetCursorPosition( drawnGrid.x, drawnGrid.y );
+                Console.Write( " " );
             }
 
-            foreach (var snakeGrid in _snakeGrids) {
-                if (_drawnGrids.Exists(drawnGrid => drawnGrid == snakeGrid)) // already drawn
+            foreach ( var snakeGrid in _snakeGrids ) {
+                if ( _drawnGrids.Exists( drawnGrid => drawnGrid == snakeGrid ) ) // already drawn
                     continue;
 
-                Console.SetCursorPosition(snakeGrid.x + 1, snakeGrid.y + 1);
-                Console.Write("#");
+                Console.SetCursorPosition( snakeGrid.x, snakeGrid.y );
+                Console.Write( "#" );
             }
             _drawnGrids = _snakeGrids; // now all snakes are drawn :)
         }
