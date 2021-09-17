@@ -32,8 +32,13 @@ namespace snake
 
         private Coordinate _currentAcceleration;
         private Coordinate _currentHeadPosition;
+        private int _gameWidth;
+        private int _gameHeight;
         public Snake(int gameWidth, int gameHeight) {
             _snakeLength = 3;
+            _currentAcceleration = new Coordinate { x = 1, y = 0 };
+            _gameHeight = gameHeight;
+            _gameWidth = gameWidth;
         }
 
         public void Tick() {
