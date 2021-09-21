@@ -10,7 +10,7 @@ namespace snake
 
         public bool Equals(Coordinate other)
         {
-            return x == other.x && y == other.y;
+            return this == other;
         }
 
         public override bool Equals(object obj)
