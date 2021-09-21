@@ -7,6 +7,22 @@ namespace snake
     {
         public int x;
         public int y;
+
+        public bool Equals(Coordinate other)
+        {
+            return x == other.x && y == other.y;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Coordinate other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(x, y);
+        }
+
         public static Coordinate operator +( Coordinate a, Coordinate b ) {
             a.x += b.x;
             a.y += b.y;
