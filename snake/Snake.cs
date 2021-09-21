@@ -77,7 +77,6 @@ namespace snake
             // Move the snakes head forward, body will follow
             _currentHeadPosition += _currentAcceleration;
             DrawSnake( );
-        }
 
             // Check if we're actually moving
             if ( _currentAcceleration.x != 0 || _currentAcceleration.y != 0 ) {
