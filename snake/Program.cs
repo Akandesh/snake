@@ -15,7 +15,8 @@ namespace snake
     {
         const int GameWidth = 80;
         const int GameHeight = 20;
-        void EntryPoint( ) {
+        void EntryPoint( )
+        {
             SetupGame( );
             MenuOptions selectedMenu = MainMenu( );
 

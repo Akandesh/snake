@@ -73,7 +73,7 @@ namespace snake
             _gameWidth = gameWidth;
 
             _snakeGrids = new List<Coordinate>( );
-            for ( int i = 0; i < 1; i++ ) {
+            for ( int i = 0; i < 3; i++ ) {
                 Coordinate curCoordinate = new Coordinate( ) { x = gameWidth / 2, y = gameHeight / 2 + i };
                 if ( i == 0 ) {
                     _currentHeadPosition = curCoordinate;
