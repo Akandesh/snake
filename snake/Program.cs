@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Threading;
 
@@ -17,18 +17,34 @@ namespace snake
         const int GameHeight = 20;
         void EntryPoint( ) {
             SetupGame( );
+            MenuOptions selectedMenu = MainMenu( );
+
+            ClearGameBoard( );
+            switch ( selectedMenu ) {
+                case MenuOptions.Play:
+                    GameLoop( );
+                    break;
+                case MenuOptions.Quit:
+                    Environment.Exit( 0 );
+                    break;
+                case MenuOptions.Highscores:
+                    break;
+            }
+
             Console.SetCursorPosition( 0, GameHeight + 1 );
             Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ReadKey( );
         }
 
 
         void SetupGame( ) {
             Console.Title = "Snake";
+            // Windows Only
+            Console.SetWindowSize( GameWidth + 2, GameHeight + 2 );
             drawBorder( );
-            MainMenu( );
         }
 
-        void MainMenu( ) {
+        MenuOptions MainMenu( ) {
             const string greetingText = "Welcome to Snake! What's your name?";
             Coordinate greetingLocation = new Coordinate {
                 x = GameWidth / 2 - greetingText.Length / 2,
@@ -48,7 +64,8 @@ namespace snake
             Console.Write( nameString );
 
             var name = Console.ReadLine( );
-
+            // Hiding the cursor for the future
+            Console.CursorVisible = false;
 
             bool waitingForSelection = true;
             while ( waitingForSelection ) {
@@ -72,48 +89,42 @@ namespace snake
                 }
             }
 
-            ClearGameBoard( );
-            switch ( selectedMenu ) {
-                case MenuOptions.Quit:
-                    Environment.Exit( 0 );
-                    break;
-                case MenuOptions.Play:
-                    GameLoop( );
-                    break;
-            }
+            return selectedMenu;
         }
 
         void GameLoop( ) {
             var snake = new Snake( GameWidth, GameHeight ); ;
-            // Game thread
-            new System.Threading.Tasks.Task( ( ) => { 
-                while ( true ) {
-                    snake.Tick( );
-                    Thread.Sleep( 1000 / 15 );
-                }
-            } ).Start( );
 
-            while ( true ) {
-                var key = Console.ReadKey( );
-                switch ( key.Key ) {
-                    case ConsoleKey.DownArrow:
-                        snake.OnDirectionEvent(DirectionEvent.DOWN);
-                        break;
-                    case ConsoleKey.UpArrow:
-                        snake.OnDirectionEvent( DirectionEvent.UP );
-                        break;
-                    case ConsoleKey.RightArrow:
-                        snake.OnDirectionEvent( DirectionEvent.RIGHT );
-                        break;
-                    case ConsoleKey.LeftArrow:
-                        snake.OnDirectionEvent( DirectionEvent.LEFT );
-                        break;
+            while ( snake.Running ) {
+                if ( Console.KeyAvailable ) {
+                    var key = Console.ReadKey( );
+                    switch ( key.Key ) {
+                        case ConsoleKey.DownArrow:
+                            snake.OnDirectionEvent( DirectionEvent.DOWN );
+                            break;
+                        case ConsoleKey.UpArrow:
+                            snake.OnDirectionEvent( DirectionEvent.UP );
+                            break;
+                        case ConsoleKey.RightArrow:
+                            snake.OnDirectionEvent( DirectionEvent.RIGHT );
+                            break;
+                        case ConsoleKey.LeftArrow:
+                            snake.OnDirectionEvent( DirectionEvent.LEFT );
+                            break;
+                    }
                 }
+                snake.Tick( );
+                Thread.Sleep( snake.CurrentInterval );
             }
         }
 
         void ClearGameBoard( ) {
-
+            for ( int y = 1; y <= GameHeight - 2; y++ ) {
+                Console.SetCursorPosition( 1, y );
+                for ( int x = 1; x <= GameWidth - 2; x++ ) {
+                    Console.Write( " " );
+                }
+            }
         }
 
         private MenuOptions _lastMenuSelection = MenuOptions.Quit;
