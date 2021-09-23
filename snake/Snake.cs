@@ -91,8 +91,8 @@ namespace snake
         public void Tick( ) {
             // Move the snakes head forward, body will follow
             _currentHeadPosition += _currentAcceleration;
+            // Saving which direction we last moved to make sure we don't do illegal U turns
             _lastTickDirectionEvent = _lastValidDirectionEvent;
-            DrawSnake( );
 
             // Check if we're actually moving
             if ( _currentAcceleration.x != 0 || _currentAcceleration.y != 0 ) {
