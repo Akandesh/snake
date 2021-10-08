@@ -1,5 +1,6 @@
-using System;
-using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 
 namespace snake
@@ -15,38 +16,65 @@ namespace snake
     {
         const int GameWidth = 80;
         const int GameHeight = 20;
-        void EntryPoint( )
-        {
+        private Snake _snakeInstance = null;
+        void EntryPoint( ) {
             SetupGame( );
-            MenuOptions selectedMenu = MainMenu( );
 
-            ClearGameBoard( );
-            switch ( selectedMenu ) {
-                case MenuOptions.Play:
-                    GameLoop( );
-                    break;
-                case MenuOptions.Quit:
-                    Environment.Exit( 0 );
-                    break;
-                case MenuOptions.Highscores:
-                    break;
+            bool gameRunning = true;
+            while ( gameRunning ) {
+                MenuOptions selectedMenu = MainMenu( );
+                ClearGameBoard( );
+                switch ( selectedMenu ) {
+                    case MenuOptions.Play:
+                        GameLoop( );
+                        ClearGameBoard( );
+                        break;
+                    case MenuOptions.Quit:
+                        gameRunning = false;
+                        break;
+                    case MenuOptions.Highscores:
+                        DisplayHighscores( );
+                        break;
+                }
             }
 
             Console.SetCursorPosition( 0, GameHeight + 1 );
             Console.ForegroundColor = ConsoleColor.Gray;
-            Console.ReadKey( );
         }
 
 
         void SetupGame( ) {
+            // Initializing the snake instance
+            if ( _snakeInstance == null )
+                _snakeInstance = new Snake( GameWidth, GameHeight ); ;
+
+            const string filePath = "scores.bin"; // Also one occurance in snake.cs
+            if ( _snakeInstance.HighScores == null ) {
+                // Reading save data or initializing it
+                if ( File.Exists( filePath ) ) {
+                    DataSerializer dataSerializer = new( );
+                    _snakeInstance.HighScores = dataSerializer.Deserialize( filePath ) as HighScores;
+
+
+                    // Init if null, did this to suppress warnings but *shouldn't* happen
+                    _snakeInstance.HighScores ??= new HighScores( );
+                    _snakeInstance.HighScores.Scores ??= new List<HighScore>( );
+                } else {
+                    _snakeInstance.HighScores = new HighScores( );
+                    _snakeInstance.HighScores.Scores = new List<HighScore>( );
+                }
+            }
+
             Console.Title = "Snake";
             // Windows Only
+#pragma warning disable CA1416 // Validate platform compatibility
             Console.SetWindowSize( GameWidth + 2, GameHeight + 2 );
+#pragma warning restore CA1416 // Validate platform compatibility
             drawBorder( );
         }
 
         MenuOptions MainMenu( ) {
-            const string greetingText = "Welcome to Snake! What's your name?";
+            const string greetingText = "Welcome to Snake!";
             Coordinate greetingLocation = new Coordinate {
                 x = GameWidth / 2 - greetingText.Length / 2,
                 y = GameHeight / 3
@@ -59,12 +87,6 @@ namespace snake
             Console.SetCursorPosition( greetingLocation.x, greetingLocation.y );
             Console.Write( greetingText );
 
-            Console.ForegroundColor = ConsoleColor.White;
-            const string nameString = "Name: ";
-            Console.SetCursorPosition( GameWidth / 2 - nameString.Length, greetingLocation.y + 2 );
-            Console.Write( nameString );
-
-            var name = Console.ReadLine( );
             // Hiding the cursor for the future
             Console.CursorVisible = false;
 
@@ -90,39 +112,40 @@ namespace snake
                 }
             }
 
+            // Setting global selection back to default
+            _lastMenuSelection = MenuOptions.Quit;
             return selectedMenu;
         }
 
         void GameLoop( ) {
-            var snake = new Snake( GameWidth, GameHeight ); ;
-
-            while ( snake.Running ) {
+            _snakeInstance.Reset( );
+            while ( _snakeInstance.Running ) {
                 if ( Console.KeyAvailable ) {
-                    var key = Console.ReadKey( );
+                    var key = Console.ReadKey( true );
                     switch ( key.Key ) {
                         case ConsoleKey.DownArrow:
-                            snake.OnDirectionEvent( DirectionEvent.DOWN );
+                            _snakeInstance.OnDirectionEvent( DirectionEvent.DOWN );
                             break;
                         case ConsoleKey.UpArrow:
-                            snake.OnDirectionEvent( DirectionEvent.UP );
+                            _snakeInstance.OnDirectionEvent( DirectionEvent.UP );
                             break;
                         case ConsoleKey.RightArrow:
-                            snake.OnDirectionEvent( DirectionEvent.RIGHT );
+                            _snakeInstance.OnDirectionEvent( DirectionEvent.RIGHT );
                             break;
                         case ConsoleKey.LeftArrow:
-                            snake.OnDirectionEvent( DirectionEvent.LEFT );
+                            _snakeInstance.OnDirectionEvent( DirectionEvent.LEFT );
                             break;
                     }
                 }
-                snake.Tick( );
-                Thread.Sleep( snake.CurrentInterval );
+                _snakeInstance.Tick( );
+                Thread.Sleep( _snakeInstance.CurrentInterval );
             }
         }
 
         void ClearGameBoard( ) {
-            for ( int y = 1; y <= GameHeight - 2; y++ ) {
+            for ( int y = 1; y <= GameHeight - 1; y++ ) {
                 Console.SetCursorPosition( 1, y );
-                for ( int x = 1; x <= GameWidth - 2; x++ ) {
+                for ( int x = 1; x <= GameWidth - 1; x++ ) {
                     Console.Write( " " );
                 }
             }
@@ -145,19 +168,52 @@ namespace snake
             Console.ForegroundColor = ConsoleColor.White;
 
 
-            string playString = $"[{( selectedMenu == MenuOptions.Play ? '*' : ' ' )}] PLAY";
+            string playString = $"[{( selectedMenu == MenuOptions.Play ? '┼' : ' ' )}] PLAY";
             int offsetFromCenter = playString.Length / 2;
-            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, greetingLocation.y + 4 );
+            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 2 );
             Console.Write( playString );
 
-            string highScoreString = $"[{( selectedMenu == MenuOptions.Highscores ? '*' : ' ' )}] HIGHSCORES";
-            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, greetingLocation.y + 5 );
+            string highScoreString = $"[{( selectedMenu == MenuOptions.Highscores ? '┼' : ' ' )}] HIGHSCORES";
+            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 2 + 1 );
             Console.Write( highScoreString );
 
-            string quitString = $"[{( selectedMenu == MenuOptions.Quit ? '*' : ' ' )}] QUIT";
-            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, greetingLocation.y + 6 );
+            string quitString = $"[{( selectedMenu == MenuOptions.Quit ? '┼' : ' ' )}] QUIT";
+            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 2 + 2 );
             Console.Write( quitString );
             _lastMenuSelection = selectedMenu;
+        }
+
+        void DisplayHighscores( ) {
+            // Clear the area where text will go
+            ClearGameBoard( );
+
+            // Write the header
+            string highScoreString = "HIGHSCORES";
+            int offsetFromCenter = highScoreString.Length / 2;
+            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 8 );
+            Console.Write( highScoreString );
+
+
+            var highScores = _snakeInstance.HighScores.Scores;
+
+            int leftPosition = 4;
+            int topPosition = GameHeight / 8 + 2;
+            int maxElements = GameHeight - topPosition - 1;
+
+            // Basically clamping the highscore count to fit inside the area
+            int iterations = highScores.Count > maxElements ? maxElements : highScores.Count;
+
+            // Output the scores
+            for ( int i = 0; i < iterations; i++ ) {
+                var score = highScores[ i ];
+                Console.SetCursorPosition( leftPosition, topPosition + i );
+                Console.Write( $"{i + 1}. {score.Name}" );
+                Console.SetCursorPosition( GameWidth - GameWidth / 4, topPosition + i );
+                Console.Write( score.Score );
+            }
+
+            Console.ReadKey( true );
+            ClearGameBoard( );
         }
 
         void drawBorder( ) {
@@ -167,20 +223,30 @@ namespace snake
                 bool onTop = y == 0;
                 bool onBottom = y == GameHeight;
                 for ( int x = 0; x <= GameWidth; x++ ) {
-                    bool onEdge = ( onTop && x == 0 ) ||
-                                  ( onTop && x == GameWidth ) ||
-                                  ( onBottom && x == 0 ) ||
-                                  ( onBottom && x == GameWidth );
-                    if ( onEdge ) {
-                        Console.Write( '+' );
+                    if ( onTop && x == 0 ) {
+                        Console.Write( '╔' );
                         continue;
                     }
-
-                    if ( x == 0 || x == GameWidth || onTop || onBottom ) {
-                        Console.Write( '#' );
+                    if ( onBottom && x == 0 ) {
+                        Console.Write( '╚' );
                         continue;
                     }
-
+                    if ( onTop && x == GameWidth ) {
+                        Console.Write( '╗' );
+                        continue;
+                    }
+                    if ( onBottom && x == GameWidth ) {
+                        Console.Write( '╝' );
+                        continue;
+                    }
+                    if ( onTop || onBottom ) {
+                        Console.Write( "═" );
+                        continue;
+                    }
+                    if ( x == 0 || x == GameWidth ) {
+                        Console.Write( '║' );
+                        continue;
+                    }
                     Console.Write( ' ' );
                 }
                 Console.WriteLine( );

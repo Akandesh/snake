@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace snake
 {
@@ -61,28 +63,34 @@ namespace snake
 
         public bool Running { get; private set; }
         public int CurrentInterval { get; private set; }
+        public HighScores HighScores { get; set; }
 
         private DirectionEvent _lastValidDirectionEvent = DirectionEvent.NONE;
         private DirectionEvent _lastTickDirectionEvent = DirectionEvent.NONE;
         public Snake( int gameWidth, int gameHeight ) {
+            _gameHeight = gameHeight;
+            _gameWidth = gameWidth;
+
+            // Needed to be initialized so that DrawSnake foreach doesn't crash on first iteration
+            _drawnGrids = new List<Coordinate>( );
+
+            Reset();
+        }
+
+        public void Reset( ) {
             Running = true;
 
             _snakeLength = 10;
             _currentAcceleration = new Coordinate { x = 0, y = 0 };
-            _gameHeight = gameHeight;
-            _gameWidth = gameWidth;
-
+            
             _snakeGrids = new List<Coordinate>( );
             for ( int i = 0; i < 3; i++ ) {
-                Coordinate curCoordinate = new Coordinate( ) { x = gameWidth / 2, y = gameHeight / 2 + i };
+                Coordinate curCoordinate = new Coordinate( ) { x = _gameWidth / 2, y = _gameHeight / 2 + i };
                 if ( i == 0 ) {
                     _currentHeadPosition = curCoordinate;
                 }
                 _snakeGrids.Add( curCoordinate );
             }
-
-            // Needed to be initialized so that DrawSnake foreach doesn't crash on first iteration
-            _drawnGrids = new List<Coordinate>( );
 
             // Create initial food
             GenerateFood( );
@@ -167,9 +175,59 @@ namespace snake
             var gameOverText = "Game Over";
             var scoreText = $"Your score was: {_score}";
             Console.SetCursorPosition( _gameWidth / 2 - gameOverText.Length / 2, _gameHeight / 2 - 2 );
+            Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Write( gameOverText );
             Console.SetCursorPosition( _gameWidth / 2 - scoreText.Length / 2, _gameHeight / 2 );
+            Console.ForegroundColor = ConsoleColor.White;
             Console.Write( scoreText );
+
+            var enterNameText = "Enter your name to save your score or hit ESC:";
+            Console.SetCursorPosition( _gameWidth / 2 - enterNameText.Length / 2, _gameHeight / 2 + 2 );
+            Console.Write( enterNameText );
+
+
+
+            Console.SetCursorPosition( _gameWidth / 2 - 1, _gameHeight / 2 + 3 );
+            string inputName = String.Empty;
+            bool hitEnter = false;
+
+            while ( !hitEnter ) {
+                var key = Console.ReadKey( true );
+                hitEnter = key.Key == ConsoleKey.Enter;
+
+                // exit while hitEnter remains false
+                if ( key.Key == ConsoleKey.Escape )
+                    break;
+                if ( key.Key != ConsoleKey.Backspace ) {
+                    inputName += key.KeyChar;
+                   
+                    inputName = Regex.Replace( inputName, @"\s", "" ); // replaces any whitespaces, anywhere
+                } else {
+                    inputName = Regex.Replace( inputName, @"\s", "" ); // as above
+                    StringBuilder sb = new StringBuilder( inputName );
+                    sb[ ^1 ] = ' ';
+                    sb.Insert( 0, ' ' );
+                    inputName = sb.ToString( );
+                }
+
+                Console.SetCursorPosition( _gameWidth / 2 - ( inputName.Length / 2 ), _gameHeight / 2 + 3 );
+                Console.Write( inputName );
+            }
+
+            if ( !hitEnter || inputName.Trim().Length == 0)
+                return;
+
+            HighScore newScore = new( ) {
+                Name = inputName.Trim( ),
+                Score = _score
+            };
+
+            HighScores.Scores.Add( newScore );
+
+            HighScores.Scores.Sort( ( a, b ) => b.Score.CompareTo( a.Score ) );
+
+            DataSerializer dataSerializer = new( );
+            dataSerializer.BinarySerialize( HighScores, "scores.bin" ); // Writes HighScores to disk
         }
 
         public void OnDirectionEvent( DirectionEvent e ) {
