@@ -74,7 +74,7 @@ namespace snake
             // Needed to be initialized so that DrawSnake foreach doesn't crash on first iteration
             _drawnGrids = new List<Coordinate>( );
 
-            Reset();
+            Reset( );
         }
 
         public void Reset( ) {
@@ -82,8 +82,9 @@ namespace snake
 
             _snakeLength = 10;
             _currentAcceleration = new Coordinate { x = 0, y = 0 };
-            
+
             _snakeGrids = new List<Coordinate>( );
+            // snake starts with a visual length of 3
             for ( int i = 0; i < 3; i++ ) {
                 Coordinate curCoordinate = new Coordinate( ) { x = _gameWidth / 2, y = _gameHeight / 2 + i };
                 if ( i == 0 ) {
@@ -199,8 +200,9 @@ namespace snake
                 if ( key.Key == ConsoleKey.Escape )
                     break;
                 if ( key.Key != ConsoleKey.Backspace ) {
-                    inputName += key.KeyChar;
-                   
+                    if ( inputName.Length < 30 )
+                        inputName += key.KeyChar;
+
                     inputName = Regex.Replace( inputName, @"\s", "" ); // replaces any whitespaces, anywhere
                 } else {
                     inputName = Regex.Replace( inputName, @"\s", "" ); // as above
@@ -214,7 +216,7 @@ namespace snake
                 Console.Write( inputName );
             }
 
-            if ( !hitEnter || inputName.Trim().Length == 0)
+            if ( !hitEnter || inputName.Trim( ).Length == 0 )
                 return;
 
             HighScore newScore = new( ) {
