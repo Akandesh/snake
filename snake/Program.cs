@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-
+using System.Diagnostics;
+using static snake.HamiltonianCycle;
 namespace snake
 {
     enum MenuOptions
@@ -17,8 +18,15 @@ namespace snake
         const int GameWidth = 80;
         const int GameHeight = 20;
         private Snake _snakeInstance = null;
+
+        public HamiltonianCycle HamiltonianCycle;
+        public HamiltonianCycleData HamiltonianCycleData;
+
         void EntryPoint( ) {
             SetupGame( );
+
+            HamiltonianCycle = new HamiltonianCycle( );
+            HamiltonianCycleData = HamiltonianCycle.GetHamiltonianCycleData( GameWidth - 2, GameHeight - 1 ); // gameplan is 2px smaller due to borders 
 
             bool gameRunning = true;
             while ( gameRunning ) {
@@ -137,6 +145,17 @@ namespace snake
                             break;
                     }
                 }
+
+                Debug.Print( String.Format( "{0} : {1}", _snakeInstance._currentHeadPosition.x, _snakeInstance._currentHeadPosition.y ) );
+
+                if ( _snakeInstance._currentHeadPosition.y == 2 ) {
+                    Debug.Print( "Breakpoint" );
+                }
+                var test = HamiltonianCycleData.Data.MoveDirections[ _snakeInstance._currentHeadPosition.x - 1, _snakeInstance._currentHeadPosition.y - 1 ];
+
+                _snakeInstance.OnDirectionEvent( HamiltonianCycleData.Data.MoveDirections[
+                    _snakeInstance._currentHeadPosition.x - 1,
+                    _snakeInstance._currentHeadPosition.y - 1 ] );
                 _snakeInstance.Tick( );
                 Thread.Sleep( _snakeInstance.CurrentInterval );
             }
@@ -219,6 +238,7 @@ namespace snake
         void drawBorder( ) {
             Console.Clear( );
             Console.ForegroundColor = ConsoleColor.DarkCyan;
+            Console.SetCursorPosition( 0, 0 );
             for ( int y = 0; y <= GameHeight; y++ ) {
                 bool onTop = y == 0;
                 bool onBottom = y == GameHeight;
@@ -253,8 +273,10 @@ namespace snake
             }
         }
 
+        public static Program program = null;
         static void Main( ) {
-            new Program( ).EntryPoint( ); // silly static escape
+            program = new Program( ); // silly static escape
+            program.EntryPoint( );
         }
     }
 }

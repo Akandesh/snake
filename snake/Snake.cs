@@ -36,13 +36,13 @@ namespace snake
         }
     }
 
-    enum DirectionEvent
+    public enum DirectionEvent
     {
+        NONE,
         UP,
         RIGHT,
         DOWN,
-        LEFT,
-        NONE
+        LEFT
     }
 
     class Snake
@@ -56,7 +56,7 @@ namespace snake
         private Coordinate _previousFoodCoordinate = new( );
 
         private Coordinate _currentAcceleration;
-        private Coordinate _currentHeadPosition;
+        public Coordinate _currentHeadPosition;
 
         private readonly int _gameWidth;
         private readonly int _gameHeight;
@@ -86,7 +86,7 @@ namespace snake
             _snakeGrids = new List<Coordinate>( );
             // snake starts with a visual length of 3
             for ( int i = 0; i < 3; i++ ) {
-                Coordinate curCoordinate = new Coordinate( ) { x = _gameWidth / 2, y = _gameHeight / 2 + i };
+                Coordinate curCoordinate = new Coordinate( ) { x = 1/*_gameWidth / 2*/, y = _gameHeight / 2 /*+ i*/ };
                 if ( i == 0 ) {
                     _currentHeadPosition = curCoordinate;
                 }
@@ -106,25 +106,33 @@ namespace snake
             // Check if we're actually moving
             if ( _currentAcceleration.x != 0 || _currentAcceleration.y != 0 ) {
 
-                // Check if we're colliding with ourselves
-                if ( _snakeGrids.Exists( grid => grid == _currentHeadPosition ) ) {
+                Action GameOver = ( ) => {
                     Running = false;
                     DrawGameOver( );
                     return;
+                };
+
+                // Check if we're colliding with ourselves
+                if ( _snakeGrids.Exists( grid => grid == _currentHeadPosition ) ) {
+                    GameOver( );
                 }
 
                 // Make it go from right border to left
                 if ( _currentHeadPosition.x >= _gameWidth )
-                    _currentHeadPosition.x = 1;
+                    GameOver( );
+                //_currentHeadPosition.x = 1;
                 // Left border to right
                 if ( _currentHeadPosition.x < 1 )
-                    _currentHeadPosition.x = _gameWidth - 1;
+                    GameOver( );
+                //_currentHeadPosition.x = _gameWidth - 1;
                 // Bottom border to top
                 if ( _currentHeadPosition.y >= _gameHeight )
-                    _currentHeadPosition.y = 1;
+                    GameOver( );
+                //_currentHeadPosition.y = 1;
                 // Top border to bottom
                 if ( _currentHeadPosition.y < 1 )
-                    _currentHeadPosition.y = _gameHeight - 1;
+                    GameOver( );
+                //_currentHeadPosition.y = _gameHeight - 1;
 
                 _snakeGrids.Insert( 0, _currentHeadPosition );
 
@@ -233,8 +241,6 @@ namespace snake
         }
 
         public void OnDirectionEvent( DirectionEvent e ) {
-            bool verticalMovement = ( e == DirectionEvent.DOWN || e == DirectionEvent.UP );
-
             // Handle arrow keys
             switch ( e ) {
                 case DirectionEvent.DOWN:
@@ -273,7 +279,8 @@ namespace snake
             // Slowing the game down when moving vertically because
             // there's a much greater distance between characters vertically
             // making it feel a lot faster
-            CurrentInterval = verticalMovement ? 1000 / 10 : 1000 / 15;
+            //CurrentInterval = verticalMovement ? 1000 / 10 : 1000 / 15;
+            CurrentInterval = 1;
         }
 
         private void DrawSnake( ) {
@@ -286,6 +293,7 @@ namespace snake
                 // Overwrites the drawn snake with a space
                 Console.SetCursorPosition( drawnGrid.x, drawnGrid.y );
                 Console.Write( " " );
+                //Console.Write( Program.program.HamiltonianCycleData.Data.PointToSequenceNumber[ drawnGrid.x, drawnGrid.y ] );
             }
 
             foreach ( var snakeGrid in _snakeGrids ) {
