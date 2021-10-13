@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace snake
 {
-    struct Coordinate
+    public struct Coordinate
     {
         public int x;
         public int y;
@@ -52,10 +52,10 @@ namespace snake
         private int _snakeLength; // snakeGrids.Length essentially but used for trimming
         private int _score;
 
-        private Coordinate _foodCoordinate;
+        public Coordinate _foodCoordinate;
         private Coordinate _previousFoodCoordinate = new( );
 
-        private Coordinate _currentAcceleration;
+        private Coordinate _currentVelocity;
         public Coordinate _currentHeadPosition;
 
         private readonly int _gameWidth;
@@ -81,7 +81,7 @@ namespace snake
             Running = true;
 
             _snakeLength = 10;
-            _currentAcceleration = new Coordinate { x = 0, y = 0 };
+            _currentVelocity = new Coordinate { x = 0, y = 0 };
 
             _snakeGrids = new List<Coordinate>( );
             // snake starts with a visual length of 3
@@ -99,12 +99,12 @@ namespace snake
 
         public void Tick( ) {
             // Move the snakes head forward, body will follow
-            _currentHeadPosition += _currentAcceleration;
+            _currentHeadPosition += _currentVelocity;
             // Saving which direction we last moved to make sure we don't do illegal U turns
             _lastTickDirectionEvent = _lastValidDirectionEvent;
 
             // Check if we're actually moving
-            if ( _currentAcceleration.x != 0 || _currentAcceleration.y != 0 ) {
+            if ( _currentVelocity.x != 0 || _currentVelocity.y != 0 ) {
 
                 Action GameOver = ( ) => {
                     Running = false;
@@ -246,32 +246,32 @@ namespace snake
                 case DirectionEvent.DOWN:
                     // Prohibit random 180 movements
                     if ( _lastTickDirectionEvent != DirectionEvent.UP ) {
-                        _currentAcceleration.x = 0;
-                        _currentAcceleration.y = 1;
+                        _currentVelocity.x = 0;
+                        _currentVelocity.y = 1;
                         _lastValidDirectionEvent = e;
                     }
                     break;
                 case DirectionEvent.LEFT:
                     // Prohibit random 180 movements
                     if ( _lastTickDirectionEvent != DirectionEvent.RIGHT ) {
-                        _currentAcceleration.x = -1;
-                        _currentAcceleration.y = 0;
+                        _currentVelocity.x = -1;
+                        _currentVelocity.y = 0;
                         _lastValidDirectionEvent = e;
                     }
                     break;
                 case DirectionEvent.RIGHT:
                     // Prohibit random 180 movements
                     if ( _lastTickDirectionEvent != DirectionEvent.LEFT ) {
-                        _currentAcceleration.x = 1;
-                        _currentAcceleration.y = 0;
+                        _currentVelocity.x = 1;
+                        _currentVelocity.y = 0;
                         _lastValidDirectionEvent = e;
                     }
                     break;
                 case DirectionEvent.UP:
                     // Prohibit random 180 movements
                     if ( _lastTickDirectionEvent != DirectionEvent.DOWN ) {
-                        _currentAcceleration.x = 0;
-                        _currentAcceleration.y = -1;
+                        _currentVelocity.x = 0;
+                        _currentVelocity.y = -1;
                         _lastValidDirectionEvent = e;
                     }
                     break;
