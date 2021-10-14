@@ -47,16 +47,15 @@ namespace snake
 
     class Snake
     {
-        private List<Coordinate> _snakeGrids; // grids where the snake is currently inside
         private List<Coordinate> _drawnGrids; // last grids that were drawn, used to make sure i don't have any leftovers
         private int _snakeLength; // snakeGrids.Length essentially but used for trimming
         private int _score;
 
-        public Coordinate _foodCoordinate;
         private Coordinate _previousFoodCoordinate = new( );
 
+        public ReturnData returnData;
+
         private Coordinate _currentVelocity;
-        public Coordinate _currentHeadPosition;
 
         private readonly int _gameWidth;
         private readonly int _gameHeight;
@@ -80,17 +79,21 @@ namespace snake
         public void Reset( ) {
             Running = true;
 
+            returnData = new( );
+            returnData.SnakePositions = new List<Coordinate>( );
+            returnData.ShotCutMoveDirections = new List<DirectionEvent>( );
+
             _snakeLength = 10;
             _currentVelocity = new Coordinate { x = 0, y = 0 };
 
-            _snakeGrids = new List<Coordinate>( );
+            returnData.SnakePositions = new List<Coordinate>( );
             // snake starts with a visual length of 3
             for ( int i = 0; i < 3; i++ ) {
                 Coordinate curCoordinate = new Coordinate( ) { x = 1/*_gameWidth / 2*/, y = _gameHeight / 2 /*+ i*/ };
-                if ( i == 0 ) {
-                    _currentHeadPosition = curCoordinate;
+                returnData.SnakePositions.Add( curCoordinate );
+                if (i == 0 ) {
+                    returnData.HeadPosition = curCoordinate;
                 }
-                _snakeGrids.Add( curCoordinate );
             }
 
             // Create initial food
@@ -99,7 +102,7 @@ namespace snake
 
         public void Tick( ) {
             // Move the snakes head forward, body will follow
-            _currentHeadPosition += _currentVelocity;
+            returnData.HeadPosition += _currentVelocity;
             // Saving which direction we last moved to make sure we don't do illegal U turns
             _lastTickDirectionEvent = _lastValidDirectionEvent;
 
@@ -113,36 +116,36 @@ namespace snake
                 };
 
                 // Check if we're colliding with ourselves
-                if ( _snakeGrids.Exists( grid => grid == _currentHeadPosition ) ) {
+                if ( returnData.SnakePositions.Exists( grid => grid == returnData.HeadPosition ) ) {
                     GameOver( );
                 }
 
                 // Make it go from right border to left
-                if ( _currentHeadPosition.x >= _gameWidth )
+                if ( returnData.HeadPosition.x >= _gameWidth )
                     GameOver( );
                 //_currentHeadPosition.x = 1;
                 // Left border to right
-                if ( _currentHeadPosition.x < 1 )
+                if ( returnData.HeadPosition.x < 1 )
                     GameOver( );
                 //_currentHeadPosition.x = _gameWidth - 1;
                 // Bottom border to top
-                if ( _currentHeadPosition.y >= _gameHeight )
+                if ( returnData.HeadPosition.y >= _gameHeight )
                     GameOver( );
                 //_currentHeadPosition.y = 1;
                 // Top border to bottom
-                if ( _currentHeadPosition.y < 1 )
+                if ( returnData.HeadPosition.y < 1 )
                     GameOver( );
                 //_currentHeadPosition.y = _gameHeight - 1;
 
-                _snakeGrids.Insert( 0, _currentHeadPosition );
+                returnData.SnakePositions.Insert( 0, returnData.HeadPosition );
 
                 // Only remove tail if snake is bigger than the it's meant to be.
                 // length increases when given food
-                while ( _snakeGrids.Count > _snakeLength )
-                    _snakeGrids.RemoveAt( _snakeGrids.Count - 1 );
+                while ( returnData.SnakePositions.Count > _snakeLength )
+                    returnData.SnakePositions.RemoveAt( returnData.SnakePositions.Count - 1 );
             }
 
-            if ( _currentHeadPosition == _foodCoordinate ) {
+            if ( returnData.HeadPosition == returnData.ApplePosition ) {
                 _snakeLength++;
                 _score += 10;
                 GenerateFood( );
@@ -154,14 +157,14 @@ namespace snake
 
         private void GenerateFood( ) {
             Random random = new( );
-            _foodCoordinate = new Coordinate( ) {
+            returnData.ApplePosition = new Coordinate( ) {
                 x = random.Next( 1, _gameWidth ),
                 y = random.Next( 1, _gameHeight )
             };
 
-            foreach ( var snakeGrid in _snakeGrids ) {
+            foreach ( var snakeGrid in returnData.SnakePositions ) {
                 // If the generated food is on the snake then it's not valid, we need to re-run
-                if ( snakeGrid == _foodCoordinate ) {
+                if ( snakeGrid == returnData.ApplePosition ) {
                     // infinite loop when we win :^)
                     GenerateFood( );
                     return;
@@ -287,7 +290,7 @@ namespace snake
             Console.ForegroundColor = ConsoleColor.White;
             foreach ( var drawnGrid in _drawnGrids ) {
                 // Still valid
-                if ( _snakeGrids.Exists( snakeGrid => snakeGrid == drawnGrid ) )
+                if ( returnData.SnakePositions.Exists( snakeGrid => snakeGrid == drawnGrid ) )
                     continue;
 
                 // Overwrites the drawn snake with a space
@@ -296,7 +299,7 @@ namespace snake
                 //Console.Write( Program.program.HamiltonianCycleData.Data.PointToSequenceNumber[ drawnGrid.x, drawnGrid.y ] );
             }
 
-            foreach ( var snakeGrid in _snakeGrids ) {
+            foreach ( var snakeGrid in returnData.SnakePositions ) {
                 // Already drawn
                 if ( _drawnGrids.Exists( drawnGrid => drawnGrid == snakeGrid ) )
                     continue;
@@ -307,15 +310,15 @@ namespace snake
             }
 
             // Drawing food
-            if ( _previousFoodCoordinate != _foodCoordinate ) {
+            if ( _previousFoodCoordinate != returnData.ApplePosition ) {
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.SetCursorPosition( _foodCoordinate.x, _foodCoordinate.y );
+                Console.SetCursorPosition( returnData.ApplePosition.x, returnData.ApplePosition.y );
                 Console.Write( "#" );
-                _previousFoodCoordinate = _foodCoordinate;
+                _previousFoodCoordinate = returnData.ApplePosition;
             }
 
             // Have to make a new copy of snakeGrids otherwise it uses a reference by default :(
-            _drawnGrids = new List<Coordinate>( _snakeGrids ); // Now all snake grids are drawn :)
+            _drawnGrids = new List<Coordinate>( returnData.SnakePositions ); // Now all snake grids are drawn :)
         }
     }
 }

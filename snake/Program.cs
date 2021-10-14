@@ -127,10 +127,8 @@ namespace snake
 
         void GameLoop( ) {
             _snakeInstance.Reset( );
-            ReturnData ReturnDatas = new( );
             ShortCut shortCut = new( );
             while ( _snakeInstance.Running ) {
-                ReturnDatas.ApplePosition = _snakeInstance._foodCoordinate;
                 if ( Console.KeyAvailable ) {
                     var key = Console.ReadKey( true );
                     switch ( key.Key ) {
@@ -149,13 +147,13 @@ namespace snake
                     }
                 }
 
-                if ( ReturnDatas.ShotCutMoveDirections == null || ReturnDatas.ShotCutMoveDirections.Count == 0 ) {
+                if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
                     switch ( HamiltonianCycleData.Case ) {
                         case Case.Case_1_And_3:
-                            shortCut.CalcShortCutForCase1And3( ReturnDatas, HamiltonianCycleData );
+                            shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
                             break;
                         case Case.Case_2:
-                            shortCut.CalcShortCutForCase2( ReturnDatas, HamiltonianCycleData );
+                            shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
                             break;
                         default:
                             throw new Exception( "Unknown case!" );
@@ -163,20 +161,20 @@ namespace snake
                 }
 
                 // Maybe now exists a shortcut path.
-                if ( ReturnDatas.ShotCutMoveDirections.Count != 0 ) {
+                if ( _snakeInstance.returnData.ShotCutMoveDirections.Count != 0 ) {
                     // Minimum one shortcut move direction exists. So it must be used!
-                    _snakeInstance.OnDirectionEvent( ReturnDatas.ShotCutMoveDirections[ 0 ] );
-                    ReturnDatas.ShotCutMoveDirections.RemoveAt( 0 );
+                    _snakeInstance.OnDirectionEvent( _snakeInstance.returnData.ShotCutMoveDirections[ 0 ] );
+                    _snakeInstance.returnData.ShotCutMoveDirections.RemoveAt( 0 );
                 } else {
-                    if ( _snakeInstance._currentHeadPosition.y == 2 ) {
+                    if ( _snakeInstance.returnData.HeadPosition.y == 2 ) {
                         Debug.Print( "Breakpoint" );
                     }
-                    var test = HamiltonianCycleData.Data.MoveDirections[ _snakeInstance._currentHeadPosition.x - 1, _snakeInstance._currentHeadPosition.y - 1 ];
+                    var test = HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x - 1, _snakeInstance.returnData.HeadPosition.y - 1 ];
 
 
                     _snakeInstance.OnDirectionEvent(
-                        HamiltonianCycleData.Data.MoveDirections[ _snakeInstance._currentHeadPosition.x - 1,
-                            _snakeInstance._currentHeadPosition.y - 1 ] );
+                        HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x - 1,
+                            _snakeInstance.returnData.HeadPosition.y - 1 ] );
                 }
 
                 //Debug.Print( String.Format( "{0} : {1}", _snakeInstance._currentHeadPosition.x, _snakeInstance._currentHeadPosition.y ) );
