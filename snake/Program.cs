@@ -26,7 +26,9 @@ namespace snake
             SetupGame( );
 
             HamiltonianCycle = new HamiltonianCycle( );
-            HamiltonianCycleData = HamiltonianCycle.GetHamiltonianCycleData( GameWidth - 2, GameHeight - 1 ); // gameplan is 2px smaller due to borders 
+            HamiltonianCycleData = HamiltonianCycle.GetHamiltonianCycleData( GameWidth, GameHeight ); // gameplan is 2px smaller due to borders 
+            HamiltonianCycleData = CorrectHamiltonian( );
+
 
             bool gameRunning = true;
             while ( gameRunning ) {
@@ -48,6 +50,13 @@ namespace snake
 
             Console.SetCursorPosition( 0, GameHeight + 1 );
             Console.ForegroundColor = ConsoleColor.Gray;
+        }
+
+        HamiltonianCycleData CorrectHamiltonian( ) {
+            HamiltonianCycleData ret = HamiltonianCycleData.Clone() as HamiltonianCycleData;
+
+
+            return ret;
         }
 
 
@@ -147,18 +156,18 @@ namespace snake
                     }
                 }
 
-                if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
-                    switch ( HamiltonianCycleData.Case ) {
-                        case Case.Case_1_And_3:
-                            shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
-                            break;
-                        case Case.Case_2:
-                            shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
-                            break;
-                        default:
-                            throw new Exception( "Unknown case!" );
-                    }
-                }
+                //if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
+                //    switch ( HamiltonianCycleData.Case ) {
+                //        case Case.Case_1_And_3:
+                //            shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
+                //            break;
+                //        case Case.Case_2:
+                //            shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
+                //            break;
+                //        default:
+                //            throw new Exception( "Unknown case!" );
+                //    }
+                //}
 
                 // Maybe now exists a shortcut path.
                 if ( _snakeInstance.returnData.ShotCutMoveDirections.Count != 0 ) {
@@ -169,12 +178,12 @@ namespace snake
                     if ( _snakeInstance.returnData.HeadPosition.y == 2 ) {
                         Debug.Print( "Breakpoint" );
                     }
-                    var test = HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x - 1, _snakeInstance.returnData.HeadPosition.y - 1 ];
+                    var test = HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x, _snakeInstance.returnData.HeadPosition.y ];
 
 
                     _snakeInstance.OnDirectionEvent(
-                        HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x - 1,
-                            _snakeInstance.returnData.HeadPosition.y - 1 ] );
+                        HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x,
+                            _snakeInstance.returnData.HeadPosition.y ] );
                 }
 
                 //Debug.Print( String.Format( "{0} : {1}", _snakeInstance._currentHeadPosition.x, _snakeInstance._currentHeadPosition.y ) );

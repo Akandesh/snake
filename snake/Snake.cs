@@ -66,6 +66,8 @@ namespace snake
 
         private DirectionEvent _lastValidDirectionEvent = DirectionEvent.NONE;
         private DirectionEvent _lastTickDirectionEvent = DirectionEvent.NONE;
+
+        private DirectionEvent _lastDrawn = DirectionEvent.NONE;
         public Snake( int gameWidth, int gameHeight ) {
             _gameHeight = gameHeight;
             _gameWidth = gameWidth;
@@ -82,6 +84,8 @@ namespace snake
             returnData = new( );
             returnData.SnakePositions = new List<Coordinate>( );
             returnData.ShotCutMoveDirections = new List<DirectionEvent>( );
+            _lastValidDirectionEvent = DirectionEvent.NONE;
+            _lastTickDirectionEvent = DirectionEvent.NONE;
 
             _snakeLength = 10;
             _currentVelocity = new Coordinate { x = 0, y = 0 };
@@ -91,7 +95,7 @@ namespace snake
             for ( int i = 0; i < 3; i++ ) {
                 Coordinate curCoordinate = new Coordinate( ) { x = 1/*_gameWidth / 2*/, y = _gameHeight / 2 /*+ i*/ };
                 returnData.SnakePositions.Add( curCoordinate );
-                if (i == 0 ) {
+                if ( i == 0 ) {
                     returnData.HeadPosition = curCoordinate;
                 }
             }
@@ -244,6 +248,7 @@ namespace snake
         }
 
         public void OnDirectionEvent( DirectionEvent e ) {
+            bool verticalMovement = e == DirectionEvent.UP || e == DirectionEvent.DOWN;
             // Handle arrow keys
             switch ( e ) {
                 case DirectionEvent.DOWN:
@@ -282,12 +287,98 @@ namespace snake
             // Slowing the game down when moving vertically because
             // there's a much greater distance between characters vertically
             // making it feel a lot faster
-            //CurrentInterval = verticalMovement ? 1000 / 10 : 1000 / 15;
+            //CurrentInterval = verticalMovement ? 1000 / 50 : 1000 / 75;
             CurrentInterval = 1;
         }
 
+        private void DrawHamiltonian( DirectionEvent curEvent ) {
+            if ( _lastDrawn == DirectionEvent.NONE ) {
+                _lastDrawn = curEvent;
+            }
+            switch ( curEvent ) {
+                case DirectionEvent.UP:
+                    switch ( _lastDrawn ) {
+                        case DirectionEvent.UP:
+                            Console.Write( '║' );
+                            break;
+                        case DirectionEvent.RIGHT:
+                            Console.Write( '╝' );
+                            break;
+                        case DirectionEvent.DOWN:
+                            Console.Write( "ERROR" );
+                            break;
+                        case DirectionEvent.LEFT:
+                            Console.Write( '╚' );
+                            break;
+                    }
+                    break;
+                case DirectionEvent.RIGHT:
+                    switch ( _lastDrawn ) {
+                        case DirectionEvent.UP:
+                            Console.Write( '╔' );
+                            break;
+                        case DirectionEvent.DOWN:
+                            Console.Write( '╚' );
+                            break;
+                        case DirectionEvent.LEFT:
+                            Console.Write( "ERROR" );
+                            break;
+                        case DirectionEvent.RIGHT:
+                            Console.Write( "═" );
+                            break;
+                    }
+                    break;
+                case DirectionEvent.DOWN:
+                    switch ( _lastDrawn ) {
+                        case DirectionEvent.UP:
+                            Console.Write( "ERROR" );
+                            break;
+                        case DirectionEvent.RIGHT:
+                            Console.Write( '╗' );
+                            break;
+                        case DirectionEvent.LEFT:
+                            Console.Write( '╔' );
+                            break;
+                        case DirectionEvent.DOWN:
+                            Console.Write( '║' );
+                            break;
+                    }
+                    break;
+                case DirectionEvent.LEFT:
+                    switch ( _lastDrawn ) {
+                        case DirectionEvent.UP:
+                            Console.Write( '╗' );
+                            break;
+                        case DirectionEvent.RIGHT:
+                            Console.Write( "ERROR" );
+                            break;
+                        case DirectionEvent.DOWN:
+                            Console.Write( '╝' );
+                            break;
+                        case DirectionEvent.LEFT:
+                            Console.Write( "═" );
+                            break;
+                    }
+                    break;
+            }
+            _lastDrawn = curEvent;
+        }
+
+        private bool _drawnHamilton = false;
         private void DrawSnake( ) {
             Console.ForegroundColor = ConsoleColor.White;
+
+            var hamiltonianCycle = Program.program.HamiltonianCycleData;
+            if ( !_drawnHamilton ) {
+                _lastDrawn = DirectionEvent.NONE;
+                foreach ( var point in hamiltonianCycle.Data.SequenceNumberToPoint ) {
+                    Console.SetCursorPosition( point.X, point.Y );
+                    DrawHamiltonian( hamiltonianCycle.Data.MoveDirections[ point.X, point.Y ] );
+                }
+                _drawnHamilton = true;
+            }
+
+            _lastDrawn = DirectionEvent.NONE;
             foreach ( var drawnGrid in _drawnGrids ) {
                 // Still valid
                 if ( returnData.SnakePositions.Exists( snakeGrid => snakeGrid == drawnGrid ) )
@@ -295,7 +386,10 @@ namespace snake
 
                 // Overwrites the drawn snake with a space
                 Console.SetCursorPosition( drawnGrid.x, drawnGrid.y );
-                Console.Write( " " );
+
+                var currentMove = hamiltonianCycle.Data.MoveDirections[ drawnGrid.x, drawnGrid.y ];
+
+                DrawHamiltonian( currentMove );
                 //Console.Write( Program.program.HamiltonianCycleData.Data.PointToSequenceNumber[ drawnGrid.x, drawnGrid.y ] );
             }
 
@@ -309,6 +403,7 @@ namespace snake
                 Console.Write( "#" );
             }
 
+
             // Drawing food
             if ( _previousFoodCoordinate != returnData.ApplePosition ) {
                 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -316,6 +411,8 @@ namespace snake
                 Console.Write( "#" );
                 _previousFoodCoordinate = returnData.ApplePosition;
             }
+
+
 
             // Have to make a new copy of snakeGrids otherwise it uses a reference by default :(
             _drawnGrids = new List<Coordinate>( returnData.SnakePositions ); // Now all snake grids are drawn :)

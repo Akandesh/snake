@@ -6,29 +6,33 @@ namespace snake
 {
     public class HamiltonianCycle
     {
+        public static bool IsValueEven( int value ) {
+            // "true" for 0, 2, 4 ,6, ...
+            return value % 2 == 0;
+        }
+
         public enum Case
         {
             Case_1_And_3 = 0,
             Case_2
         }
 
-        public class HamiltonianCycleData
+        public class HamiltonianCycleData : ICloneable
         {
             public Data Data;
             public Case Case;
+
+            public object Clone( ) {
+                return this.MemberwiseClone( );
+            }
         }
 
         public class Data
         {
             // Example: width = 6, height = 6 -> even / even -> is case 1: 
-            public DirectionEvent[,] MoveDirections; //        MoveDirections[2, 3] = .Right
+            public DirectionEvent[,] MoveDirections; //        MoveDirections[2, 3] = .RIGHT
             public int[,] PointToSequenceNumber;    // PointToSequenceNumber[2, 3] = 19            (20th Element because zero base counted)    
             public Point[] SequenceNumberToPoint;   // SequenceNumberToPoint[19]   = Point(2, 3)
-        }
-
-        public static bool IsValueEven( int value ) {
-            // "true" for 0, 2, 4 ,6, ...
-            return value % 2 == 0;
         }
 
         public HamiltonianCycleData GetHamiltonianCycleData( int playFieldWidth, int playFieldHeight ) {
@@ -38,7 +42,6 @@ namespace snake
             if ( playFieldHeight < 2 ) {
                 throw new Exception( "The 'PlayFieldHeight' value must be equal or greater than 2!" );
             }
-
 
             // |------|------|------|
             // | Case | x    | y    |
@@ -92,7 +95,7 @@ namespace snake
             }
             ret.MoveDirections[ width - 1, height - 1 ] = DirectionEvent.UP;
 
-            // 4) First row (special because of ret [1,0] which is ".Left" and not ".Up".
+            // 4) First row (special because of ret [1,0] which is ".LEFT" and not ".UP".
             for ( int x = 1; x < width; x++ ) {
                 ret.MoveDirections[ x, 0 ] = DirectionEvent.LEFT;
             }
