@@ -122,23 +122,32 @@ namespace snake
                 // Check if we're colliding with ourselves
                 if ( returnData.SnakePositions.Exists( grid => grid == returnData.HeadPosition ) ) {
                     GameOver( );
+                    return;
                 }
 
                 // Make it go from right border to left
-                if ( returnData.HeadPosition.x >= _gameWidth )
+                if ( returnData.HeadPosition.x >= _gameWidth + 1 ) {
                     GameOver( );
+                    return;
+                }
                 //_currentHeadPosition.x = 1;
                 // Left border to right
-                if ( returnData.HeadPosition.x < 1 )
+                if ( returnData.HeadPosition.x < 1 ) {
                     GameOver( );
+                    return;
+                }
                 //_currentHeadPosition.x = _gameWidth - 1;
                 // Bottom border to top
-                if ( returnData.HeadPosition.y >= _gameHeight )
+                if ( returnData.HeadPosition.y >= _gameHeight + 1 ) {
                     GameOver( );
+                    return;
+                }
                 //_currentHeadPosition.y = 1;
                 // Top border to bottom
-                if ( returnData.HeadPosition.y < 1 )
+                if ( returnData.HeadPosition.y < 1 ) {
                     GameOver( );
+                    return;
+                }
                 //_currentHeadPosition.y = _gameHeight - 1;
 
                 returnData.SnakePositions.Insert( 0, returnData.HeadPosition );
@@ -295,6 +304,7 @@ namespace snake
             if ( _lastDrawn == DirectionEvent.NONE ) {
                 _lastDrawn = curEvent;
             }
+            Console.ForegroundColor = ConsoleColor.DarkMagenta;
             switch ( curEvent ) {
                 case DirectionEvent.UP:
                     switch ( _lastDrawn ) {
@@ -362,7 +372,7 @@ namespace snake
                     break;
             }
             _lastDrawn = curEvent;
-        }
+        }   
 
         private bool _drawnHamilton = false;
         private void DrawSnake( ) {
@@ -376,9 +386,10 @@ namespace snake
                     DrawHamiltonian( hamiltonianCycle.Data.MoveDirections[ point.X, point.Y ] );
                 }
                 _drawnHamilton = true;
+                _lastDrawn = DirectionEvent.NONE;
             }
 
-            _lastDrawn = DirectionEvent.NONE;
+            
             foreach ( var drawnGrid in _drawnGrids ) {
                 // Still valid
                 if ( returnData.SnakePositions.Exists( snakeGrid => snakeGrid == drawnGrid ) )
@@ -393,6 +404,7 @@ namespace snake
                 //Console.Write( Program.program.HamiltonianCycleData.Data.PointToSequenceNumber[ drawnGrid.x, drawnGrid.y ] );
             }
 
+            Console.ForegroundColor = ConsoleColor.Yellow;
             foreach ( var snakeGrid in returnData.SnakePositions ) {
                 // Already drawn
                 if ( _drawnGrids.Exists( drawnGrid => drawnGrid == snakeGrid ) )
@@ -406,7 +418,7 @@ namespace snake
 
             // Drawing food
             if ( _previousFoodCoordinate != returnData.ApplePosition ) {
-                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.SetCursorPosition( returnData.ApplePosition.x, returnData.ApplePosition.y );
                 Console.Write( "#" );
                 _previousFoodCoordinate = returnData.ApplePosition;

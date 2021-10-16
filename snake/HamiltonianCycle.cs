@@ -193,11 +193,11 @@ namespace snake
             return ret;
         }
 
-        private void GenerateSequence( int width, int height, Data hamiltonianCycle ) {
+        public void GenerateSequence( int width, int height, Data hamiltonianCycle, int pxOffset = 0 ) {
             var index = -1;
             var count = width * height;
-            var currentPosition = new Point( 0, 0 );
-            hamiltonianCycle.PointToSequenceNumber[ 0, 0 ] = ++index;
+            var currentPosition = new Point( 0 + pxOffset, 0 + pxOffset );
+            hamiltonianCycle.PointToSequenceNumber[ 0 + pxOffset, 0 + pxOffset ] = ++index;
             hamiltonianCycle.SequenceNumberToPoint[ 0 ] = currentPosition;
             do {
                 switch ( hamiltonianCycle.MoveDirections[ currentPosition.X, currentPosition.Y ] ) {
@@ -224,6 +224,7 @@ namespace snake
         }
 
         private void ShowHamiltonianCycle( int width, int height, Data hamiltonianCycle ) {
+            return;
             Console.WriteLine( $"Testdata for ({width}, {height}):" );
 
             Console.WriteLine( "Part 1:" );

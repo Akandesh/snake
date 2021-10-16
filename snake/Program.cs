@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
+using System.Drawing;
 using static snake.HamiltonianCycle;
 namespace snake
 {
@@ -26,8 +27,8 @@ namespace snake
             SetupGame( );
 
             HamiltonianCycle = new HamiltonianCycle( );
-            HamiltonianCycleData = HamiltonianCycle.GetHamiltonianCycleData( GameWidth, GameHeight ); // gameplan is 2px smaller due to borders 
-            HamiltonianCycleData = CorrectHamiltonian( );
+            HamiltonianCycleData = HamiltonianCycle.GetHamiltonianCycleData( GameWidth, GameHeight ); 
+            HamiltonianCycleData = CorrectHamiltonian( ); // gameplan is 2px smaller due to borders 
 
 
             bool gameRunning = true;
@@ -54,11 +55,23 @@ namespace snake
 
         HamiltonianCycleData CorrectHamiltonian( ) {
             HamiltonianCycleData ret = HamiltonianCycleData.Clone() as HamiltonianCycleData;
+            var data = new Data( ) {
+                MoveDirections = new DirectionEvent[ GameWidth + 2, GameHeight + 2 ],
+                PointToSequenceNumber = new int[ GameWidth + 2, GameHeight + 2 ],
+                SequenceNumberToPoint = new Point[ ( GameWidth + 2 ) * ( GameHeight + 2 ) ]
+            };
 
+            for (int x = 1; x < ret.Data.MoveDirections.GetLength(0) + 1; x++ ) {
+                for ( int y = 1; y < ret.Data.MoveDirections.GetLength( 1 ) + 1; y++ ) {
+                    data.MoveDirections[ x, y ] = ret.Data.MoveDirections[ x - 1, y - 1 ];
+                }
+            }
 
+            HamiltonianCycle.GenerateSequence( GameWidth + 2, GameHeight + 2, data, 1 );
+            ret.Data = data;
             return ret;
         }
-
+         
 
         void SetupGame( ) {
             // Initializing the snake instance
@@ -156,47 +169,42 @@ namespace snake
                     }
                 }
 
-                //if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
-                //    switch ( HamiltonianCycleData.Case ) {
-                //        case Case.Case_1_And_3:
-                //            shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
-                //            break;
-                //        case Case.Case_2:
-                //            shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
-                //            break;
-                //        default:
-                //            throw new Exception( "Unknown case!" );
-                //    }
-                //}
+                if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
+                    switch ( HamiltonianCycleData.Case ) {
+                        case Case.Case_1_And_3:
+                            shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
+                            break;
+                        case Case.Case_2:
+                            shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
+                            break;
+                        default:
+                            throw new Exception( "Unknown case!" );
+                    }
+                }
 
-                // Maybe now exists a shortcut path.
+                //Maybe now exists a shortcut path.
                 if ( _snakeInstance.returnData.ShotCutMoveDirections.Count != 0 ) {
                     // Minimum one shortcut move direction exists. So it must be used!
                     _snakeInstance.OnDirectionEvent( _snakeInstance.returnData.ShotCutMoveDirections[ 0 ] );
                     _snakeInstance.returnData.ShotCutMoveDirections.RemoveAt( 0 );
                 } else {
-                    if ( _snakeInstance.returnData.HeadPosition.y == 2 ) {
-                        Debug.Print( "Breakpoint" );
-                    }
-                    var test = HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x, _snakeInstance.returnData.HeadPosition.y ];
-
-
+                    // Otherwise follow the regular path
                     _snakeInstance.OnDirectionEvent(
-                        HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x,
-                            _snakeInstance.returnData.HeadPosition.y ] );
+                    HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x,
+                        _snakeInstance.returnData.HeadPosition.y ] );
                 }
 
-                //Debug.Print( String.Format( "{0} : {1}", _snakeInstance._currentHeadPosition.x, _snakeInstance._currentHeadPosition.y ) );
+            //Debug.Print( String.Format( "{0} : {1}", _snakeInstance._currentHeadPosition.x, _snakeInstance._currentHeadPosition.y ) );
 
-                _snakeInstance.Tick( );
+            _snakeInstance.Tick( );
                 Thread.Sleep( _snakeInstance.CurrentInterval );
             }
         }
 
         void ClearGameBoard( ) {
-            for ( int y = 1; y <= GameHeight - 1; y++ ) {
+            for ( int y = 1; y <= GameHeight; y++ ) {
                 Console.SetCursorPosition( 1, y );
-                for ( int x = 1; x <= GameWidth - 1; x++ ) {
+                for ( int x = 1; x <= GameWidth; x++ ) {
                     Console.Write( " " );
                 }
             }
@@ -271,10 +279,10 @@ namespace snake
             Console.Clear( );
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.SetCursorPosition( 0, 0 );
-            for ( int y = 0; y <= GameHeight; y++ ) {
+            for ( int y = 0; y <= GameHeight + 1; y++ ) {
                 bool onTop = y == 0;
-                bool onBottom = y == GameHeight;
-                for ( int x = 0; x <= GameWidth; x++ ) {
+                bool onBottom = y == GameHeight + 1;
+                for ( int x = 0; x <= GameWidth + 1; x++ ) {
                     if ( onTop && x == 0 ) {
                         Console.Write( '╔' );
                         continue;
@@ -283,11 +291,11 @@ namespace snake
                         Console.Write( '╚' );
                         continue;
                     }
-                    if ( onTop && x == GameWidth ) {
+                    if ( onTop && x == GameWidth + 1 ) {
                         Console.Write( '╗' );
                         continue;
                     }
-                    if ( onBottom && x == GameWidth ) {
+                    if ( onBottom && x == GameWidth + 1 ) {
                         Console.Write( '╝' );
                         continue;
                     }
@@ -295,7 +303,7 @@ namespace snake
                         Console.Write( "═" );
                         continue;
                     }
-                    if ( x == 0 || x == GameWidth ) {
+                    if ( x == 0 || x == GameWidth + 1 ) {
                         Console.Write( '║' );
                         continue;
                     }

@@ -56,7 +56,7 @@ namespace snake
                 return;
             }
 
-            // Check whether all snake parts are in the Hamiltonia Cycle. Leave if not.
+            // Check whether all snake parts are in the Hamiltonia Cycle. Leave if not. (To check if we've recently shortcutted)
             if ( !AreAllSnakePartsInTheHamiltonianCycle( returnDatas, HamiltonianCycleData ) ) {
                 return;
             }
@@ -185,12 +185,12 @@ namespace snake
                 var pointA = returnDatas.SnakePositions[ i ];
                 var pointB = returnDatas.SnakePositions[ i + 1 ];
 
-                if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.x - 1, pointA.y - 1 ] == 0 ) {
-                    if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.x - 1, pointB.y - 1 ] != HamiltonianCycleData.Data.PointToSequenceNumber.Length - 1 ) {
+                if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.x, pointA.y ] == 0 ) {
+                    if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.x, pointB.y ] != HamiltonianCycleData.Data.PointToSequenceNumber.Length - 1 ) {
                         return false;
                     }
 
-                } else if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.x - 1, pointA.y - 1 ] - 1 != HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.x - 1, pointB.y - 1 ] ) {
+                } else if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.x, pointA.y ] - 1 != HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.x, pointB.y ] ) {
                     return false;
                 }
             }
