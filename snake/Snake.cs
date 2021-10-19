@@ -2,40 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Drawing;
 
 namespace snake
 {
-    public struct Coordinate
-    {
-        public int x;
-        public int y;
-
-        public bool Equals( Coordinate other ) {
-            return this == other;
-        }
-
-        public override bool Equals( object obj ) {
-            return obj is Coordinate other && Equals( other );
-        }
-
-        public override int GetHashCode( ) {
-            return HashCode.Combine( x, y );
-        }
-
-        public static Coordinate operator +( Coordinate a, Coordinate b ) {
-            a.x += b.x;
-            a.y += b.y;
-            return a;
-        }
-
-        public static bool operator ==( Coordinate a, Coordinate b ) {
-            return a.x == b.x && a.y == b.y;
-        }
-        public static bool operator !=( Coordinate a, Coordinate b ) {
-            return !( a == b );
-        }
-    }
-
     public enum DirectionEvent
     {
         NONE,
@@ -45,17 +15,25 @@ namespace snake
         LEFT
     }
 
+    public enum Difficulty
+    {
+        Easy,
+        Normal,
+        Hard
+    }
+
+   
     class Snake
     {
-        private List<Coordinate> _drawnGrids; // last grids that were drawn, used to make sure i don't have any leftovers
+        private List<Point> _drawnGrids; // last grids that were drawn, used to make sure i don't have any leftovers
         private int _snakeLength; // snakeGrids.Length essentially but used for trimming
         private int _score;
 
-        private Coordinate _previousFoodCoordinate = new( );
+        private Point _previousFoodPoint = new( );
 
         public ReturnData returnData;
 
-        private Coordinate _currentVelocity;
+        private Point _currentVelocity;
 
         private readonly int _gameWidth;
         private readonly int _gameHeight;
@@ -68,35 +46,46 @@ namespace snake
         private DirectionEvent _lastTickDirectionEvent = DirectionEvent.NONE;
 
         private DirectionEvent _lastDrawn = DirectionEvent.NONE;
+
+        private Dictionary<Point, char> _PointToHamChar;
+
         public Snake( int gameWidth, int gameHeight ) {
             _gameHeight = gameHeight;
             _gameWidth = gameWidth;
 
             // Needed to be initialized so that DrawSnake foreach doesn't crash on first iteration
-            _drawnGrids = new List<Coordinate>( );
+            _drawnGrids = new List<Point>( );
+
+            _PointToHamChar = new Dictionary<Point, char>( );
 
             Reset( );
         }
 
+        public void CombinePoints( ref Point a, in Point b ) {
+            a.Y += b.Y;
+            a.X += b.X;
+        }
+
         public void Reset( ) {
             Running = true;
+            _drawnHamilton = false;
 
             returnData = new( );
-            returnData.SnakePositions = new List<Coordinate>( );
+            returnData.SnakePositions = new List<Point>( );
             returnData.ShotCutMoveDirections = new List<DirectionEvent>( );
             _lastValidDirectionEvent = DirectionEvent.NONE;
             _lastTickDirectionEvent = DirectionEvent.NONE;
 
             _snakeLength = 10;
-            _currentVelocity = new Coordinate { x = 0, y = 0 };
+            _currentVelocity = new Point { X = 0, Y = 0 };
 
-            returnData.SnakePositions = new List<Coordinate>( );
+            returnData.SnakePositions = new List<Point>( );
             // snake starts with a visual length of 3
             for ( int i = 0; i < 3; i++ ) {
-                Coordinate curCoordinate = new Coordinate( ) { x = 1/*_gameWidth / 2*/, y = _gameHeight / 2 /*+ i*/ };
-                returnData.SnakePositions.Add( curCoordinate );
+                Point curPoint = new Point( ) { X = 1/*_gameWidth / 2*/, Y = _gameHeight / 2 /*+ i*/ };
+                returnData.SnakePositions.Add( curPoint );
                 if ( i == 0 ) {
-                    returnData.HeadPosition = curCoordinate;
+                    returnData.HeadPosition = curPoint;
                 }
             }
 
@@ -106,12 +95,12 @@ namespace snake
 
         public void Tick( ) {
             // Move the snakes head forward, body will follow
-            returnData.HeadPosition += _currentVelocity;
+            CombinePoints( ref returnData.HeadPosition, _currentVelocity );
             // Saving which direction we last moved to make sure we don't do illegal U turns
             _lastTickDirectionEvent = _lastValidDirectionEvent;
 
             // Check if we're actually moving
-            if ( _currentVelocity.x != 0 || _currentVelocity.y != 0 ) {
+            if ( _currentVelocity.X != 0 || _currentVelocity.Y != 0 ) {
 
                 Action GameOver = ( ) => {
                     Running = false;
@@ -126,29 +115,29 @@ namespace snake
                 }
 
                 // Make it go from right border to left
-                if ( returnData.HeadPosition.x >= _gameWidth + 1 ) {
+                if ( returnData.HeadPosition.X >= _gameWidth + 1 ) {
                     GameOver( );
                     return;
                 }
-                //_currentHeadPosition.x = 1;
+                //_currentHeadPosition.X = 1;
                 // Left border to right
-                if ( returnData.HeadPosition.x < 1 ) {
+                if ( returnData.HeadPosition.X < 1 ) {
                     GameOver( );
                     return;
                 }
-                //_currentHeadPosition.x = _gameWidth - 1;
+                //_currentHeadPosition.X = _gameWidth - 1;
                 // Bottom border to top
-                if ( returnData.HeadPosition.y >= _gameHeight + 1 ) {
+                if ( returnData.HeadPosition.Y >= _gameHeight + 1 ) {
                     GameOver( );
                     return;
                 }
-                //_currentHeadPosition.y = 1;
+                //_currentHeadPosition.Y = 1;
                 // Top border to bottom
-                if ( returnData.HeadPosition.y < 1 ) {
+                if ( returnData.HeadPosition.Y < 1 ) {
                     GameOver( );
                     return;
                 }
-                //_currentHeadPosition.y = _gameHeight - 1;
+                //_currentHeadPosition.Y = _gameHeight - 1;
 
                 returnData.SnakePositions.Insert( 0, returnData.HeadPosition );
 
@@ -170,9 +159,9 @@ namespace snake
 
         private void GenerateFood( ) {
             Random random = new( );
-            returnData.ApplePosition = new Coordinate( ) {
-                x = random.Next( 1, _gameWidth ),
-                y = random.Next( 1, _gameHeight )
+            returnData.ApplePosition = new Point( ) {
+                X = random.Next( 1, _gameWidth ),
+                Y = random.Next( 1, _gameHeight )
             };
 
             foreach ( var snakeGrid in returnData.SnakePositions ) {
@@ -256,152 +245,182 @@ namespace snake
             dataSerializer.BinarySerialize( HighScores, "scores.bin" ); // Writes HighScores to disk
         }
 
-        public void OnDirectionEvent( DirectionEvent e ) {
-            bool verticalMovement = e == DirectionEvent.UP || e == DirectionEvent.DOWN;
-            // Handle arrow keys
+
+        public bool DirectionValid( DirectionEvent e ) {
             switch ( e ) {
                 case DirectionEvent.DOWN:
                     // Prohibit random 180 movements
-                    if ( _lastTickDirectionEvent != DirectionEvent.UP ) {
-                        _currentVelocity.x = 0;
-                        _currentVelocity.y = 1;
-                        _lastValidDirectionEvent = e;
+                    if ( _lastTickDirectionEvent == DirectionEvent.UP ) {
+                        return false;
                     }
                     break;
                 case DirectionEvent.LEFT:
                     // Prohibit random 180 movements
-                    if ( _lastTickDirectionEvent != DirectionEvent.RIGHT ) {
-                        _currentVelocity.x = -1;
-                        _currentVelocity.y = 0;
-                        _lastValidDirectionEvent = e;
+                    if ( _lastTickDirectionEvent == DirectionEvent.RIGHT ) {
+                        return false;
                     }
                     break;
                 case DirectionEvent.RIGHT:
                     // Prohibit random 180 movements
-                    if ( _lastTickDirectionEvent != DirectionEvent.LEFT ) {
-                        _currentVelocity.x = 1;
-                        _currentVelocity.y = 0;
-                        _lastValidDirectionEvent = e;
+                    if ( _lastTickDirectionEvent == DirectionEvent.LEFT ) {
+                        return false;
                     }
                     break;
                 case DirectionEvent.UP:
                     // Prohibit random 180 movements
-                    if ( _lastTickDirectionEvent != DirectionEvent.DOWN ) {
-                        _currentVelocity.x = 0;
-                        _currentVelocity.y = -1;
-                        _lastValidDirectionEvent = e;
+                    if ( _lastTickDirectionEvent == DirectionEvent.DOWN ) {
+                        return false;
                     }
                     break;
+            }
+            return true;
+        }
+
+        public void OnDirectionEvent( DirectionEvent e ) {
+            bool verticalMovement = e == DirectionEvent.UP || e == DirectionEvent.DOWN;
+            // Handle arrow keys
+
+            if ( DirectionValid( e ) ) {
+                switch ( e ) {
+                    case DirectionEvent.DOWN:
+                        _currentVelocity.X = 0;
+                        _currentVelocity.Y = 1;
+                        _lastValidDirectionEvent = e;
+                        break;
+                    case DirectionEvent.LEFT:
+                        _currentVelocity.X = -1;
+                        _currentVelocity.Y = 0;
+                        _lastValidDirectionEvent = e;
+
+                        break;
+                    case DirectionEvent.RIGHT:
+                        _currentVelocity.X = 1;
+                        _currentVelocity.Y = 0;
+                        _lastValidDirectionEvent = e;
+                        break;
+                    case DirectionEvent.UP:
+                        _currentVelocity.X = 0;
+                        _currentVelocity.Y = -1;
+                        _lastValidDirectionEvent = e;
+                        break;
+                }
             }
             // Slowing the game down when moving vertically because
             // there's a much greater distance between characters vertically
             // making it feel a lot faster
-            //CurrentInterval = verticalMovement ? 1000 / 50 : 1000 / 75;
-            CurrentInterval = 1;
+            CurrentInterval = verticalMovement ? 1000 / 50 : 1000 / 75;
+            //CurrentInterval = 0;
         }
 
-        private void DrawHamiltonian( DirectionEvent curEvent ) {
+        private char GenHamiltonian( DirectionEvent curEvent ) {
             if ( _lastDrawn == DirectionEvent.NONE ) {
                 _lastDrawn = curEvent;
             }
-            Console.ForegroundColor = ConsoleColor.DarkMagenta;
+            char ret = 'E';
             switch ( curEvent ) {
                 case DirectionEvent.UP:
                     switch ( _lastDrawn ) {
                         case DirectionEvent.UP:
-                            Console.Write( '║' );
+                            ret =  '║';
                             break;
                         case DirectionEvent.RIGHT:
-                            Console.Write( '╝' );
+                            ret =  '╝';
                             break;
                         case DirectionEvent.DOWN:
-                            Console.Write( "ERROR" );
+                            ret =  'E';
                             break;
                         case DirectionEvent.LEFT:
-                            Console.Write( '╚' );
+                            ret =  '╚';
                             break;
                     }
                     break;
                 case DirectionEvent.RIGHT:
                     switch ( _lastDrawn ) {
                         case DirectionEvent.UP:
-                            Console.Write( '╔' );
+                            ret =  '╔';
                             break;
                         case DirectionEvent.DOWN:
-                            Console.Write( '╚' );
+                            ret =  '╚';
                             break;
                         case DirectionEvent.LEFT:
-                            Console.Write( "ERROR" );
+                            ret =  'E';
                             break;
                         case DirectionEvent.RIGHT:
-                            Console.Write( "═" );
+                            ret =  '═';
                             break;
                     }
                     break;
                 case DirectionEvent.DOWN:
                     switch ( _lastDrawn ) {
                         case DirectionEvent.UP:
-                            Console.Write( "ERROR" );
+                            ret =  'E';
                             break;
                         case DirectionEvent.RIGHT:
-                            Console.Write( '╗' );
+                            ret =  '╗';
                             break;
                         case DirectionEvent.LEFT:
-                            Console.Write( '╔' );
+                            ret =  '╔';
                             break;
                         case DirectionEvent.DOWN:
-                            Console.Write( '║' );
+                            ret =  '║';
                             break;
                     }
                     break;
                 case DirectionEvent.LEFT:
                     switch ( _lastDrawn ) {
                         case DirectionEvent.UP:
-                            Console.Write( '╗' );
+                            ret =  '╗';
                             break;
                         case DirectionEvent.RIGHT:
-                            Console.Write( "ERROR" );
+                            ret =  'E';
                             break;
                         case DirectionEvent.DOWN:
-                            Console.Write( '╝' );
+                            ret =  '╝';
                             break;
                         case DirectionEvent.LEFT:
-                            Console.Write( "═" );
+                            ret =  '═';
                             break;
                     }
                     break;
             }
             _lastDrawn = curEvent;
-        }   
+            return ret;
+        }
 
         private bool _drawnHamilton = false;
         private void DrawSnake( ) {
-            Console.ForegroundColor = ConsoleColor.White;
-
             var hamiltonianCycle = Program.program.HamiltonianCycleData;
-            if ( !_drawnHamilton ) {
+            bool AIShowcase = Program.program.AIShowcase;
+            if ( !_drawnHamilton && AIShowcase ) {
                 _lastDrawn = DirectionEvent.NONE;
+                // Generates the hamiltonian map
                 foreach ( var point in hamiltonianCycle.Data.SequenceNumberToPoint ) {
-                    Console.SetCursorPosition( point.X, point.Y );
-                    DrawHamiltonian( hamiltonianCycle.Data.MoveDirections[ point.X, point.Y ] );
+                    _PointToHamChar[ point ] = GenHamiltonian( hamiltonianCycle.Data.MoveDirections[ point.X, point.Y ] );
                 }
                 _drawnHamilton = true;
                 _lastDrawn = DirectionEvent.NONE;
+
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+                // Draws the hamiltonian map
+                foreach ( var keyValuePair in _PointToHamChar ) {
+                    Console.SetCursorPosition( keyValuePair.Key.X, keyValuePair.Key.Y );
+                    Console.Write( keyValuePair.Value );
+                }
             }
 
-            
+            Console.ForegroundColor = ConsoleColor.DarkMagenta;
             foreach ( var drawnGrid in _drawnGrids ) {
                 // Still valid
                 if ( returnData.SnakePositions.Exists( snakeGrid => snakeGrid == drawnGrid ) )
                     continue;
 
                 // Overwrites the drawn snake with a space
-                Console.SetCursorPosition( drawnGrid.x, drawnGrid.y );
-
-                var currentMove = hamiltonianCycle.Data.MoveDirections[ drawnGrid.x, drawnGrid.y ];
-
-                DrawHamiltonian( currentMove );
-                //Console.Write( Program.program.HamiltonianCycleData.Data.PointToSequenceNumber[ drawnGrid.x, drawnGrid.y ] );
+                Console.SetCursorPosition( drawnGrid.X, drawnGrid.Y );
+                if ( AIShowcase )
+                    Console.Write( _PointToHamChar[ drawnGrid ] );
+                else
+                    Console.Write( ' ' );
+                
             }
 
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -411,23 +430,23 @@ namespace snake
                     continue;
 
                 // Writes a # at the new snake position
-                Console.SetCursorPosition( snakeGrid.x, snakeGrid.y );
+                Console.SetCursorPosition( snakeGrid.X, snakeGrid.Y );
                 Console.Write( "#" );
             }
 
 
             // Drawing food
-            if ( _previousFoodCoordinate != returnData.ApplePosition ) {
+            if ( _previousFoodPoint != returnData.ApplePosition ) {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.SetCursorPosition( returnData.ApplePosition.x, returnData.ApplePosition.y );
+                Console.SetCursorPosition( returnData.ApplePosition.X, returnData.ApplePosition.Y );
                 Console.Write( "#" );
-                _previousFoodCoordinate = returnData.ApplePosition;
+                _previousFoodPoint = returnData.ApplePosition;
             }
 
 
 
             // Have to make a new copy of snakeGrids otherwise it uses a reference by default :(
-            _drawnGrids = new List<Coordinate>( returnData.SnakePositions ); // Now all snake grids are drawn :)
+            _drawnGrids = new List<Point>( returnData.SnakePositions ); // Now all snake grids are drawn :)
         }
     }
 }
