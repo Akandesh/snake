@@ -25,6 +25,8 @@ namespace snake
         public HamiltonianCycleData HamiltonianCycleData;
         public bool AIShowcase = false;
 
+        public Difficulty SelectedDifficulty;
+
         void EntryPoint( ) {
             SetupGame( );
 
@@ -40,6 +42,7 @@ namespace snake
                 switch ( selectedMenu ) {
                     case MenuOptions.Play:
                         AIShowcase = false;
+                        SelectDifficulty( );
                         GameLoop( );
                         ClearGameBoard( );
                         break;
@@ -80,6 +83,48 @@ namespace snake
             return ret;
         }
 
+        void SelectDifficulty( ) {
+            Console.ForegroundColor = ConsoleColor.White;
+            void DrawDifficulties( ref Difficulty difficulty ) {
+                // Keeps the selected difficulty in range
+                while ( !Enum.IsDefined( typeof( Difficulty ), difficulty ) ) {
+                    if ( (int)difficulty < 0 )
+                        difficulty++;
+                    else if ( (int)difficulty > (int)Difficulty.Hard ) // Hard is the back of Difficulty
+                        difficulty--;
+                }
+
+                Console.SetCursorPosition( GameWidth / 5, GameHeight / 2 );
+                DrawDifficultySelection( "EASY", difficulty == Difficulty.Easy, 1 );
+                DrawDifficultySelection( "NORMAL", difficulty == Difficulty.Normal, 2 );
+                DrawDifficultySelection( "HARD", difficulty == Difficulty.Hard, 3 );
+            }
+
+            DrawDifficulties( ref SelectedDifficulty );
+
+            bool waitingForSelection = true;
+            while ( waitingForSelection ) {
+                var key = Console.ReadKey( true );
+                switch ( key.Key ) {
+                    case ConsoleKey.RightArrow: {
+                        SelectedDifficulty++;
+                        DrawDifficulties( ref SelectedDifficulty );
+                        break;
+                    }
+                    case ConsoleKey.LeftArrow: {
+                        SelectedDifficulty--;
+                        DrawDifficulties( ref SelectedDifficulty );
+                        break;
+                    }
+                    case ConsoleKey.Enter:
+                        waitingForSelection = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            ClearGameBoard( );
+        }
 
         void SetupGame( ) {
             // Initializing the snake instance
@@ -162,7 +207,7 @@ namespace snake
             _snakeInstance.Reset( );
             ShortCut shortCut = new( );
             while ( _snakeInstance.Running ) {
-                if ( !AIShowcase &&  Console.KeyAvailable ) {
+                if ( !AIShowcase && Console.KeyAvailable ) {
                     var key = Console.ReadKey( true );
                     switch ( key.Key ) {
                         case ConsoleKey.DownArrow:
@@ -256,10 +301,10 @@ namespace snake
             Console.Write( playString );
         }
 
-        void DrawHighscoreOption( string name, bool selected, int index ) {
+        void DrawDifficultySelection( string name, bool selected, int index ) {
             string playString = $"[{( selected ? '┼' : ' ' )}] {name}";
             Point point = new Point {
-                X = (GameWidth / 5) * index,
+                X = ( GameWidth / 5 ) * index,
                 Y = GameHeight / 2
             };
             Console.SetCursorPosition( point.X, point.Y );
@@ -272,10 +317,23 @@ namespace snake
 
             Difficulty selectedDifficulty = Difficulty.Normal;
 
-            Console.SetCursorPosition( GameWidth / 5, GameHeight / 2 );
-            DrawHighscoreOption( "EASY", selectedDifficulty == Difficulty.Easy, 1 );
-            DrawHighscoreOption( "NORMAL", selectedDifficulty == Difficulty.Normal, 2 );
-            DrawHighscoreOption( "HARD", selectedDifficulty == Difficulty.Hard, 3 );
+            void DrawHighScoreOptions( ref Difficulty difficulty ) {
+                // Keeps the selected difficulty in range
+                while ( !Enum.IsDefined( typeof( Difficulty ), difficulty ) ) {
+                    if ( (int)difficulty < 0 )
+                        difficulty++;
+                    else if ( (int)difficulty > (int)Difficulty.Hard ) // Hard is the back of Difficulty
+                        difficulty--;
+                }
+
+                Console.SetCursorPosition( GameWidth / 5, GameHeight / 2 );
+                DrawDifficultySelection( "EASY", difficulty == Difficulty.Easy, 1 );
+                DrawDifficultySelection( "NORMAL", difficulty == Difficulty.Normal, 2 );
+                DrawDifficultySelection( "HARD", difficulty == Difficulty.Hard, 3 );
+            }
+
+            DrawHighScoreOptions( ref selectedDifficulty );
+
 
             bool waitingForSelection = true;
             while ( waitingForSelection ) {
@@ -283,12 +341,12 @@ namespace snake
                 switch ( key.Key ) {
                     case ConsoleKey.RightArrow: {
                         selectedDifficulty++;
-                        DrawMenuOptions( ref selectedMenu );
+                        DrawHighScoreOptions( ref selectedDifficulty );
                         break;
                     }
                     case ConsoleKey.LeftArrow: {
                         selectedDifficulty--;
-                        DrawMenuOptions( ref selectedMenu );
+                        DrawHighScoreOptions( ref selectedDifficulty );
                         break;
                     }
                     case ConsoleKey.Enter:
@@ -299,14 +357,17 @@ namespace snake
                 }
             }
 
+            ClearGameBoard( );
+
             // Write the header
-            string highScoreString = "HIGHSCORES";
+            string highScoreString = $"[{selectedDifficulty}] HIGHSCORES";
             int offsetFromCenter = highScoreString.Length / 2;
             Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 8 );
             Console.Write( highScoreString );
 
 
             var highScores = _snakeInstance.HighScores.Scores;
+            highScores = highScores.FindAll( score => score.difficulty == selectedDifficulty );
 
             int leftPosition = 4;
             int topPosition = GameHeight / 8 + 2;

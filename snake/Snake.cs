@@ -69,6 +69,7 @@ namespace snake
         public void Reset( ) {
             Running = true;
             _drawnHamilton = false;
+            _score = 0;
 
             returnData = new( );
             returnData.SnakePositions = new List<Point>( );
@@ -102,11 +103,11 @@ namespace snake
             // Check if we're actually moving
             if ( _currentVelocity.X != 0 || _currentVelocity.Y != 0 ) {
 
-                Action GameOver = ( ) => {
+
+                void GameOver( ) {
                     Running = false;
                     DrawGameOver( );
-                    return;
-                };
+                }
 
                 // Check if we're colliding with ourselves
                 if ( returnData.SnakePositions.Exists( grid => grid == returnData.HeadPosition ) ) {
@@ -234,7 +235,8 @@ namespace snake
 
             HighScore newScore = new( ) {
                 Name = inputName.Trim( ),
-                Score = _score
+                Score = _score,
+                difficulty = Program.program.SelectedDifficulty
             };
 
             HighScores.Scores.Add( newScore );
@@ -276,6 +278,18 @@ namespace snake
             return true;
         }
 
+        int GetSpeedPerDifficulty(Difficulty difficulty ) {
+            switch ( difficulty ) {
+                case Difficulty.Easy:
+                    return 15;
+                case Difficulty.Normal:
+                    return 25;
+                case Difficulty.Hard:
+                    return 50;
+            }
+            return 1;
+        }
+
         public void OnDirectionEvent( DirectionEvent e ) {
             bool verticalMovement = e == DirectionEvent.UP || e == DirectionEvent.DOWN;
             // Handle arrow keys
@@ -308,7 +322,8 @@ namespace snake
             // Slowing the game down when moving vertically because
             // there's a much greater distance between characters vertically
             // making it feel a lot faster
-            CurrentInterval = verticalMovement ? 1000 / 50 : 1000 / 75;
+            int speed = GetSpeedPerDifficulty( Program.program.SelectedDifficulty );
+            CurrentInterval = verticalMovement ? 1000 / speed : 1000 / (int)(speed * 1.5);
             //CurrentInterval = 0;
         }
 
