@@ -22,7 +22,6 @@ namespace snake
         Hard
     }
 
-
     class Snake
     {
         private List<Point> _drawnGrids; // last grids that were drawn, used to make sure i don't have any leftovers
@@ -445,7 +444,6 @@ namespace snake
                     Console.Write( _PointToHamChar[ drawnGrid ] );
                 else
                     Console.Write( ' ' );
-
             }
 
             Console.ForegroundColor = ConsoleColor.Yellow;
