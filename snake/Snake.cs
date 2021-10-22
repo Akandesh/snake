@@ -36,6 +36,7 @@ namespace snake
 
         private readonly int _gameWidth;
         private readonly int _gameHeight;
+        public readonly int FinalLength; // Length achieved when you finish the game
 
         public bool Running { get; private set; }
         public int CurrentInterval { get; private set; }
@@ -52,6 +53,7 @@ namespace snake
         public Snake( int gameWidth, int gameHeight ) {
             _gameHeight = gameHeight;
             _gameWidth = gameWidth;
+            FinalLength = gameHeight * gameWidth;
 
             // Needed to be initialized so that DrawSnake foreach doesn't crash on first iteration
             _drawnGrids = new List<Point>( );
@@ -150,36 +152,46 @@ namespace snake
             }
 
             if ( returnData.HeadPosition == returnData.ApplePosition ) {
-                if ( Program.program.AIShowcase )
+                if ( Program.program.AIShowcase && _snakeLength < FinalLength * 0.7)
                     _snakeLength += _random.Next( 1, 10 );
                 else
                     _snakeLength++;
                 _score += 10;
-                GenerateFood( );
+
+                if (_snakeLength == FinalLength ) {
+                    Running = false;
+                    DrawGameOver( true );
+                    return;
+                }
+                // no recursion means no stack overflow
+                while ( !GenerateFood( ) ) { }
             }
 
             // Display the changes
             DrawSnake( );
         }
 
-        private void GenerateFood( ) {
+        int countFoodTimes = 0;
+        private bool GenerateFood( ) {
             Random random = new( );
             returnData.ApplePosition = new Point( ) {
-                X = random.Next( 1, _gameWidth ),
-                Y = random.Next( 1, _gameHeight )
+                X = random.Next( 1, _gameWidth + 1 ),
+                Y = random.Next( 1, _gameHeight + 1 )
             };
 
             foreach ( var snakeGrid in returnData.SnakePositions ) {
                 // If the generated food is on the snake then it's not valid, we need to re-run
                 if ( snakeGrid == returnData.ApplePosition ) {
                     // infinite loop when we win :^)
-                    GenerateFood( );
-                    return;
+                    countFoodTimes++;
+                    return false;
                 }
             }
+            countFoodTimes = 0;
+            return true;
         }
 
-        void DrawGameOver( ) {
+        void DrawGameOver( bool won = false ) {
             int innerWidth = _gameWidth / 4;
             int innerHeight = _gameHeight / 4;
 
@@ -191,14 +203,19 @@ namespace snake
                 }
             }
 
-            var gameOverText = "Game Over";
-            var scoreText = $"Your score was: {_score}";
+            var gameOverText = won ? "Congratulations, you won!" : "Game Over";
+            var scoreText = $"{(Program.program.AIShowcase ? "The AI's" : "Your")} score was: {_score}";
             Console.SetCursorPosition( _gameWidth / 2 - gameOverText.Length / 2, _gameHeight / 2 - 2 );
-            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.ForegroundColor = won ? ConsoleColor.Green : ConsoleColor.DarkRed;
             Console.Write( gameOverText );
             Console.SetCursorPosition( _gameWidth / 2 - scoreText.Length / 2, _gameHeight / 2 );
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write( scoreText );
+
+            if ( Program.program.AIShowcase ) {
+                Console.ReadKey( true );
+                return;
+            }
 
             var enterNameText = "Enter your name to save your score or hit ESC:";
             Console.SetCursorPosition( _gameWidth / 2 - enterNameText.Length / 2, _gameHeight / 2 + 2 );

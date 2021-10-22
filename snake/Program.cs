@@ -234,15 +234,17 @@ namespace snake
                     }
 
                     if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
-                        switch ( HamiltonianCycleData.Case ) {
-                            case Case.Case_1_And_3:
-                                shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
-                                break;
-                            case Case.Case_2:
-                                shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
-                                break;
-                            default:
-                                throw new Exception( "Unknown case!" );
+                        if ( _snakeInstance.FinalLength < _snakeInstance.returnData.SnakePositions.Count * 0.9 ) {
+                            switch ( HamiltonianCycleData.Case ) {
+                                case Case.Case_1_And_3:
+                                    shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
+                                    break;
+                                case Case.Case_2:
+                                    shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
+                                    break;
+                                default:
+                                    throw new Exception( "Unknown case!" );
+                            }
                         }
                     }
 

@@ -219,56 +219,6 @@ namespace snake
                 hamiltonianCycle.PointToSequenceNumber[ currentPosition.X, currentPosition.Y ] = index;
                 hamiltonianCycle.SequenceNumberToPoint[ index ] = new Point( currentPosition.X, currentPosition.Y );
             } while ( index < count - 1 );
-
-            ShowHamiltonianCycle( width, height, hamiltonianCycle );
-        }
-
-        private void ShowHamiltonianCycle( int width, int height, Data hamiltonianCycle ) {
-            return;
-            Console.WriteLine( $"Testdata for ({width}, {height}):" );
-
-            Console.WriteLine( "Part 1:" );
-            for ( int hamHeight = 0; hamHeight < height; hamHeight++ ) {
-                var oneRow = $"row {hamHeight}: ";
-                for ( int hamWidth = 0; hamWidth < width; hamWidth++ ) {
-                    oneRow += $" | ({hamWidth}, {hamHeight}) = {hamiltonianCycle.PointToSequenceNumber[ hamWidth, hamHeight ],-4}";
-                }
-                Console.WriteLine( oneRow + " |" );
-            }
-
-            Console.WriteLine( "" );
-            Console.WriteLine( "" );
-
-            Console.WriteLine( "Part 2:" );
-            for ( int hamHeight = 0; hamHeight < height; hamHeight++ ) {
-                var oneRow = $"row {hamHeight}: ";
-                for ( int hamWidth = 0; hamWidth < width; hamWidth++ ) {
-                    oneRow += $" | ({hamWidth}, {hamHeight}) = {hamiltonianCycle.MoveDirections[ hamWidth, hamHeight ],-5} ";
-                }
-                Console.WriteLine( oneRow + " |" );
-            }
-
-            Console.WriteLine( "------------------------------------------------------------------------------" );
-        }
-
-        public void Test( ) {
-            var TestData = new List<Size>
-            {
-                //// Data for case 1 (= x is even and y is even) 
-                ////      and case 3 (= x is odd  and y is even)
-                //new Size(2, 2), new Size(2, 4), new Size(2, 6),
-                //new Size(3, 2), new Size(3, 4), new Size(3, 6),
-                //new Size(4, 2), new Size(4, 4), new Size(4, 6),
-
-                // Data for case 2 ( = x is even and y is odd)
-                new Size(2, 3), new Size(2, 5), new Size(2, 7),
-                new Size(4, 3), new Size(4, 5), new Size(4, 7),
-                new Size(6, 3), new Size(6, 5), new Size(6, 7),
-            };
-
-            foreach ( var item in TestData ) {
-                var hamiltonianCycle = GetHamiltonianCycleData( item.Width, item.Height );
-            }
         }
     }
 }
