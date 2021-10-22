@@ -10,6 +10,7 @@ namespace snake
     enum MenuOptions
     {
         Play,
+        AI,
         Highscores,
         Quit
     }
@@ -22,12 +23,15 @@ namespace snake
 
         public HamiltonianCycle HamiltonianCycle;
         public HamiltonianCycleData HamiltonianCycleData;
+        public bool AIShowcase = false;
+
+        public Difficulty SelectedDifficulty;
 
         void EntryPoint( ) {
             SetupGame( );
 
             HamiltonianCycle = new HamiltonianCycle( );
-            HamiltonianCycleData = HamiltonianCycle.GetHamiltonianCycleData( GameWidth, GameHeight ); 
+            HamiltonianCycleData = HamiltonianCycle.GetHamiltonianCycleData( GameWidth, GameHeight );
             HamiltonianCycleData = CorrectHamiltonian( ); // gameplan is 2px smaller due to borders 
 
 
@@ -37,14 +41,21 @@ namespace snake
                 ClearGameBoard( );
                 switch ( selectedMenu ) {
                     case MenuOptions.Play:
+                        AIShowcase = false;
+                        SelectDifficulty( );
                         GameLoop( );
                         ClearGameBoard( );
                         break;
-                    case MenuOptions.Quit:
-                        gameRunning = false;
+                    case MenuOptions.AI:
+                        AIShowcase = true;
+                        GameLoop( );
+                        ClearGameBoard( );
                         break;
                     case MenuOptions.Highscores:
                         DisplayHighscores( );
+                        break;
+                    case MenuOptions.Quit:
+                        gameRunning = false;
                         break;
                 }
             }
@@ -54,14 +65,14 @@ namespace snake
         }
 
         HamiltonianCycleData CorrectHamiltonian( ) {
-            HamiltonianCycleData ret = HamiltonianCycleData.Clone() as HamiltonianCycleData;
+            HamiltonianCycleData ret = HamiltonianCycleData.Clone( ) as HamiltonianCycleData;
             var data = new Data( ) {
                 MoveDirections = new DirectionEvent[ GameWidth + 2, GameHeight + 2 ],
                 PointToSequenceNumber = new int[ GameWidth + 2, GameHeight + 2 ],
                 SequenceNumberToPoint = new Point[ ( GameWidth + 2 ) * ( GameHeight + 2 ) ]
             };
 
-            for (int x = 1; x < ret.Data.MoveDirections.GetLength(0) + 1; x++ ) {
+            for ( int x = 1; x < ret.Data.MoveDirections.GetLength( 0 ) + 1; x++ ) {
                 for ( int y = 1; y < ret.Data.MoveDirections.GetLength( 1 ) + 1; y++ ) {
                     data.MoveDirections[ x, y ] = ret.Data.MoveDirections[ x - 1, y - 1 ];
                 }
@@ -71,7 +82,49 @@ namespace snake
             ret.Data = data;
             return ret;
         }
-         
+
+        void SelectDifficulty( ) {
+            Console.ForegroundColor = ConsoleColor.White;
+            void DrawDifficulties( ref Difficulty difficulty ) {
+                // Keeps the selected difficulty in range
+                while ( !Enum.IsDefined( typeof( Difficulty ), difficulty ) ) {
+                    if ( (int)difficulty < 0 )
+                        difficulty++;
+                    else if ( (int)difficulty > (int)Difficulty.Hard ) // Hard is the back of Difficulty
+                        difficulty--;
+                }
+
+                Console.SetCursorPosition( GameWidth / 5, GameHeight / 2 );
+                DrawDifficultySelection( "EASY", difficulty == Difficulty.Easy, 1 );
+                DrawDifficultySelection( "NORMAL", difficulty == Difficulty.Normal, 2 );
+                DrawDifficultySelection( "HARD", difficulty == Difficulty.Hard, 3 );
+            }
+
+            DrawDifficulties( ref SelectedDifficulty );
+
+            bool waitingForSelection = true;
+            while ( waitingForSelection ) {
+                var key = Console.ReadKey( true );
+                switch ( key.Key ) {
+                    case ConsoleKey.RightArrow: {
+                        SelectedDifficulty++;
+                        DrawDifficulties( ref SelectedDifficulty );
+                        break;
+                    }
+                    case ConsoleKey.LeftArrow: {
+                        SelectedDifficulty--;
+                        DrawDifficulties( ref SelectedDifficulty );
+                        break;
+                    }
+                    case ConsoleKey.Enter:
+                        waitingForSelection = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            ClearGameBoard( );
+        }
 
         void SetupGame( ) {
             // Initializing the snake instance
@@ -86,7 +139,7 @@ namespace snake
                     _snakeInstance.HighScores = dataSerializer.Deserialize( filePath ) as HighScores;
 
 
-                    // Init if null, did this to suppress warnings but *shouldn't* happen
+                    // Init if null
                     _snakeInstance.HighScores ??= new HighScores( );
                     _snakeInstance.HighScores.Scores ??= new List<HighScore>( );
                 } else {
@@ -105,33 +158,35 @@ namespace snake
 
         MenuOptions MainMenu( ) {
             const string greetingText = "Welcome to Snake!";
-            Coordinate greetingLocation = new Coordinate {
-                x = GameWidth / 2 - greetingText.Length / 2,
-                y = GameHeight / 3
+            Point greetingLocation = new Point {
+                X = GameWidth / 2 - greetingText.Length / 2,
+                Y = GameHeight / 3
             };
 
             var selectedMenu = MenuOptions.Play;
-            DrawMenuOptions( greetingLocation, ref selectedMenu );
+            DrawMenuOptions( ref selectedMenu );
 
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.SetCursorPosition( greetingLocation.x, greetingLocation.y );
+            Console.SetCursorPosition( greetingLocation.X, greetingLocation.Y );
             Console.Write( greetingText );
 
             // Hiding the cursor for the future
             Console.CursorVisible = false;
 
+
+            Console.SetCursorPosition( 0, 0 );
             bool waitingForSelection = true;
             while ( waitingForSelection ) {
-                var key = Console.ReadKey( );
+                var key = Console.ReadKey( true );
                 switch ( key.Key ) {
                     case ConsoleKey.DownArrow: {
                         selectedMenu++;
-                        DrawMenuOptions( greetingLocation, ref selectedMenu );
+                        DrawMenuOptions( ref selectedMenu );
                         break;
                     }
                     case ConsoleKey.UpArrow: {
                         selectedMenu--;
-                        DrawMenuOptions( greetingLocation, ref selectedMenu );
+                        DrawMenuOptions( ref selectedMenu );
                         break;
                     }
                     case ConsoleKey.Enter:
@@ -147,11 +202,12 @@ namespace snake
             return selectedMenu;
         }
 
+
         void GameLoop( ) {
             _snakeInstance.Reset( );
             ShortCut shortCut = new( );
             while ( _snakeInstance.Running ) {
-                if ( Console.KeyAvailable ) {
+                if ( !AIShowcase && Console.KeyAvailable ) {
                     var key = Console.ReadKey( true );
                     switch ( key.Key ) {
                         case ConsoleKey.DownArrow:
@@ -169,34 +225,40 @@ namespace snake
                     }
                 }
 
-                if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
-                    switch ( HamiltonianCycleData.Case ) {
-                        case Case.Case_1_And_3:
-                            shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
+                if ( AIShowcase ) {
+                    if ( Console.KeyAvailable ) {
+                        var key = Console.ReadKey( true );
+                        if ( key.Key == ConsoleKey.Escape ) {
                             break;
-                        case Case.Case_2:
-                            shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
-                            break;
-                        default:
-                            throw new Exception( "Unknown case!" );
+                        }
+                    }
+
+                    if ( _snakeInstance.returnData.ShotCutMoveDirections == null || _snakeInstance.returnData.ShotCutMoveDirections.Count == 0 ) {
+                        switch ( HamiltonianCycleData.Case ) {
+                            case Case.Case_1_And_3:
+                                shortCut.CalcShortCutForCase1And3( _snakeInstance.returnData, HamiltonianCycleData );
+                                break;
+                            case Case.Case_2:
+                                shortCut.CalcShortCutForCase2( _snakeInstance.returnData, HamiltonianCycleData );
+                                break;
+                            default:
+                                throw new Exception( "Unknown case!" );
+                        }
+                    }
+
+                    //Maybe now exists a shortcut path.
+                    if ( _snakeInstance.returnData.ShotCutMoveDirections.Count != 0 && _snakeInstance.DirectionValid( _snakeInstance.returnData.ShotCutMoveDirections[ 0 ] ) ) {
+                        // Minimum one shortcut move direction exists. So it must be used!
+                        _snakeInstance.OnDirectionEvent( _snakeInstance.returnData.ShotCutMoveDirections[ 0 ] );
+                        _snakeInstance.returnData.ShotCutMoveDirections.RemoveAt( 0 );
+                    } else {
+                        // Otherwise follow the regular path
+                        _snakeInstance.OnDirectionEvent(
+                        HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.X,
+                            _snakeInstance.returnData.HeadPosition.Y ] );
                     }
                 }
-
-                //Maybe now exists a shortcut path.
-                if ( _snakeInstance.returnData.ShotCutMoveDirections.Count != 0 ) {
-                    // Minimum one shortcut move direction exists. So it must be used!
-                    _snakeInstance.OnDirectionEvent( _snakeInstance.returnData.ShotCutMoveDirections[ 0 ] );
-                    _snakeInstance.returnData.ShotCutMoveDirections.RemoveAt( 0 );
-                } else {
-                    // Otherwise follow the regular path
-                    _snakeInstance.OnDirectionEvent(
-                    HamiltonianCycleData.Data.MoveDirections[ _snakeInstance.returnData.HeadPosition.x,
-                        _snakeInstance.returnData.HeadPosition.y ] );
-                }
-
-            //Debug.Print( String.Format( "{0} : {1}", _snakeInstance._currentHeadPosition.x, _snakeInstance._currentHeadPosition.y ) );
-
-            _snakeInstance.Tick( );
+                _snakeInstance.Tick( );
                 Thread.Sleep( _snakeInstance.CurrentInterval );
             }
         }
@@ -211,7 +273,7 @@ namespace snake
         }
 
         private MenuOptions _lastMenuSelection = MenuOptions.Quit;
-        void DrawMenuOptions( Coordinate greetingLocation, ref MenuOptions selectedMenu ) {
+        void DrawMenuOptions( ref MenuOptions selectedMenu ) {
             // Keeps the selected menu in range
             while ( !Enum.IsDefined( typeof( MenuOptions ), selectedMenu ) ) {
                 if ( (int)selectedMenu < 0 )
@@ -226,34 +288,86 @@ namespace snake
 
             Console.ForegroundColor = ConsoleColor.White;
 
-
-            string playString = $"[{( selectedMenu == MenuOptions.Play ? '┼' : ' ' )}] PLAY";
-            int offsetFromCenter = playString.Length / 2;
-            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 2 );
-            Console.Write( playString );
-
-            string highScoreString = $"[{( selectedMenu == MenuOptions.Highscores ? '┼' : ' ' )}] HIGHSCORES";
-            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 2 + 1 );
-            Console.Write( highScoreString );
-
-            string quitString = $"[{( selectedMenu == MenuOptions.Quit ? '┼' : ' ' )}] QUIT";
-            Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 2 + 2 );
-            Console.Write( quitString );
+            DrawMainMenuOption( "PLAY", selectedMenu == MenuOptions.Play, 4 );
+            DrawMainMenuOption( "DEMO", selectedMenu == MenuOptions.AI, 4, 1 );
+            DrawMainMenuOption( "HIGHSCORES", selectedMenu == MenuOptions.Highscores, 4, 2 );
+            DrawMainMenuOption( "QUIT", selectedMenu == MenuOptions.Quit, 4, 3 );
             _lastMenuSelection = selectedMenu;
+        }
+
+        void DrawMainMenuOption( string name, bool selected, int nameOffset, int offsetFromCenter = 0 ) {
+            string playString = $"[{( selected ? '┼' : ' ' )}] {name}";
+            Console.SetCursorPosition( GameWidth / 2 - nameOffset, GameHeight / 2 + offsetFromCenter );
+            Console.Write( playString );
+        }
+
+        void DrawDifficultySelection( string name, bool selected, int index ) {
+            string playString = $"[{( selected ? '┼' : ' ' )}] {name}";
+            Point point = new Point {
+                X = ( GameWidth / 5 ) * index,
+                Y = GameHeight / 2
+            };
+            Console.SetCursorPosition( point.X, point.Y );
+            Console.Write( playString );
         }
 
         void DisplayHighscores( ) {
             // Clear the area where text will go
             ClearGameBoard( );
 
+            Difficulty selectedDifficulty = Difficulty.Normal;
+
+            void DrawHighScoreOptions( ref Difficulty difficulty ) {
+                // Keeps the selected difficulty in range
+                while ( !Enum.IsDefined( typeof( Difficulty ), difficulty ) ) {
+                    if ( (int)difficulty < 0 )
+                        difficulty++;
+                    else if ( (int)difficulty > (int)Difficulty.Hard ) // Hard is the back of Difficulty
+                        difficulty--;
+                }
+
+                Console.SetCursorPosition( GameWidth / 5, GameHeight / 2 );
+                DrawDifficultySelection( "EASY", difficulty == Difficulty.Easy, 1 );
+                DrawDifficultySelection( "NORMAL", difficulty == Difficulty.Normal, 2 );
+                DrawDifficultySelection( "HARD", difficulty == Difficulty.Hard, 3 );
+            }
+
+            DrawHighScoreOptions( ref selectedDifficulty );
+
+
+            bool waitingForSelection = true;
+            while ( waitingForSelection ) {
+                var key = Console.ReadKey( true );
+                switch ( key.Key ) {
+                    case ConsoleKey.RightArrow: {
+                        selectedDifficulty++;
+                        DrawHighScoreOptions( ref selectedDifficulty );
+                        break;
+                    }
+                    case ConsoleKey.LeftArrow: {
+                        selectedDifficulty--;
+                        DrawHighScoreOptions( ref selectedDifficulty );
+                        break;
+                    }
+                    case ConsoleKey.Enter:
+                        waitingForSelection = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            ClearGameBoard( );
+
             // Write the header
-            string highScoreString = "HIGHSCORES";
+            string highScoreString = $"[{selectedDifficulty}] HIGHSCORES";
             int offsetFromCenter = highScoreString.Length / 2;
             Console.SetCursorPosition( GameWidth / 2 - offsetFromCenter, GameHeight / 8 );
             Console.Write( highScoreString );
 
 
             var highScores = _snakeInstance.HighScores.Scores;
+            highScores = highScores.FindAll( score => score.difficulty == selectedDifficulty );
 
             int leftPosition = 4;
             int topPosition = GameHeight / 8 + 2;

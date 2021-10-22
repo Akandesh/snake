@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Drawing;
 using static snake.HamiltonianCycle;
 
 
@@ -7,9 +8,9 @@ namespace snake
     public class ReturnData
     {
         public List<DirectionEvent> ShotCutMoveDirections;
-        public List<Coordinate> SnakePositions;
-        public Coordinate HeadPosition;
-        public Coordinate ApplePosition;
+        public List<Point> SnakePositions;
+        public Point HeadPosition;
+        public Point ApplePosition;
         public bool IslogicalEndReached;
     }
 
@@ -32,18 +33,18 @@ namespace snake
             var snakesHeadPosition = returnDatas.HeadPosition;
             var applePosition = returnDatas.ApplePosition;
 
-            if ( snakesHeadPosition.x < 1 || snakesHeadPosition.y < 1 ) {
+            if ( snakesHeadPosition.X < 1 || snakesHeadPosition.Y < 1 ) {
                 // No need to calculate a shortcut because snakes head is already in
                 // .X == 0  -> ... the column 0
                 // .Y == 0  -> ... the first row that leads the snake to column 0
                 return;
             }
 
-            if ( snakesHeadPosition.y == applePosition.y
+            if ( snakesHeadPosition.Y == applePosition.Y
                 && (
-                        ( snakesHeadPosition.x < applePosition.x && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.x, snakesHeadPosition.y ] == DirectionEvent.RIGHT )
+                        ( snakesHeadPosition.X < applePosition.X && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.X, snakesHeadPosition.Y ] == DirectionEvent.RIGHT )
                         ||
-                        ( snakesHeadPosition.x > applePosition.x && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.x, snakesHeadPosition.y ] == DirectionEvent.LEFT )
+                        ( snakesHeadPosition.X > applePosition.X && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.X, snakesHeadPosition.Y ] == DirectionEvent.LEFT )
                     )
                 ) {
                 // No need to calculate a shortcut because snakes head is 
@@ -61,31 +62,33 @@ namespace snake
                 return;
             }
 
-            if ( snakesHeadPosition.y > applePosition.y ) {
+            if ( snakesHeadPosition.Y > applePosition.Y ) {
                 // The snake is below the apple.
                 // The shortcut path to be calculated here should lead the snake one row below the row that contains the apple.
-                for ( int y = snakesHeadPosition.y - 1; applePosition.y < y; y-- ) {
+                for ( int y = snakesHeadPosition.Y - 1; applePosition.Y < y; y-- ) {
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.UP );
                 }
                 // The short cut path ends here exact below the row with the apple. Check whether the apple is up next to the snakehead.
-                if ( snakesHeadPosition.x == applePosition.x ) {
+                if ( snakesHeadPosition.X == applePosition.X ) {
                     // The apple is up next to the snakehead.
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.UP );
-                } else if ( snakesHeadPosition.x < applePosition.x && !IsValueEven( applePosition.y ) ) {
+                } else if ( snakesHeadPosition.X < applePosition.X && IsValueEven( applePosition.Y ) ) {
                     // Snakes head is left from the apple
                     // AND
                     // the apple is in a row with an odd number like 1, 3, 5, 7, ... 
                     // The direction in "odd rows" in right, so we can additionally lead the snake into the row with the apple
                     // because the then following non-shortcut path (aka "normal" Hamiltonian Cylce) is going to lead the snake into the apple.
+                    if ( snakesHeadPosition.X == 1)
+                        returnDatas.ShotCutMoveDirections.Add( DirectionEvent.RIGHT );
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.UP );
-                } else if ( snakesHeadPosition.x > applePosition.x && IsValueEven( applePosition.y ) ) {
+                } else if ( snakesHeadPosition.X > applePosition.X && !IsValueEven( applePosition.Y ) ) {
                     // Snakes head is right from the apple ... -> See previous comment.
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.UP );
                 }
             } else {
                 // The snake is above the apple.
-                // The snake should be lead to column 0.
-                if ( !IsValueEven( snakesHeadPosition.y ) ) {
+                // The snake should be lead to column 1.
+                if ( IsValueEven( snakesHeadPosition.Y ) && snakesHeadPosition.X != 1 ) {
                     // Do not use:
                     //      if (HamiltonianCycleData.Data.MoveDirections[snakesHeadPosition.X, snakesHeadPosition.Y] == DirectionEvent.RIGHT)
                     // because the snake head can be in an odd row while its move direction is ".Up"!
@@ -95,10 +98,10 @@ namespace snake
                     // But this would work:
                     //      if (HamiltonianCycleData.Data.MoveDirections[1, snakesHeadPosition.Y] == DirectionEvent.RIGHT)
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.UP );
-                }
-
-                for ( int x = snakesHeadPosition.x; x > 0; x-- ) {
-                    returnDatas.ShotCutMoveDirections.Add( DirectionEvent.LEFT );
+                //} else {
+                //    for ( int x = snakesHeadPosition.X; x > 1; x-- ) {
+                //        returnDatas.ShotCutMoveDirections.Add( DirectionEvent.LEFT ); // This shouldn't be necassary
+                //    }
                 }
             }
         }
@@ -107,18 +110,18 @@ namespace snake
             var snakesHeadPosition = returnDatas.HeadPosition;
             var applePosition = returnDatas.ApplePosition;
 
-            if ( snakesHeadPosition.x < 1 || snakesHeadPosition.y < 1 ) {
+            if ( snakesHeadPosition.X < 1 || snakesHeadPosition.Y < 1 ) {
                 // No need to calculate a shortcut because snakes head is already in
                 // .X == 0  -> ... the column 0
                 // .Y == 0  -> ... the first row that leads the snake to column 0
                 return;
             }
 
-            if ( snakesHeadPosition.x == applePosition.x
+            if ( snakesHeadPosition.X == applePosition.X
                 && (
-                        ( snakesHeadPosition.y < applePosition.y && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.x - 1, snakesHeadPosition.y - 1 ] == DirectionEvent.DOWN )
+                        ( snakesHeadPosition.Y < applePosition.Y && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.X - 1, snakesHeadPosition.Y - 1 ] == DirectionEvent.DOWN )
                         ||
-                        ( snakesHeadPosition.y > applePosition.y && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.x - 1, snakesHeadPosition.y - 1] == DirectionEvent.UP )
+                        ( snakesHeadPosition.Y > applePosition.Y && HamiltonianCycleData.Data.MoveDirections[ snakesHeadPosition.X - 1, snakesHeadPosition.Y - 1 ] == DirectionEvent.UP )
                     )
                 ) {
                 // No need to calculate a shortcut because snakes head is 
@@ -135,45 +138,45 @@ namespace snake
                 return;
             }
 
-            if ( snakesHeadPosition.x < applePosition.x ) {
+            if ( snakesHeadPosition.X < applePosition.X ) {
                 // The snake is to the left of the apple.
                 // The shortcut path to be calculated here should lead the snake one column before the column that contains the apple.
-                for ( int x = snakesHeadPosition.x; x < applePosition.x - 1; x++ ) {
+                for ( int x = snakesHeadPosition.X; x < applePosition.X - 1; x++ ) {
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.RIGHT );
                 }
                 // The short cut path ends here exact one column before the row with the apple. Check whether the apple is right next to the snake head.
-                if ( snakesHeadPosition.y == applePosition.y ) {
+                if ( snakesHeadPosition.Y == applePosition.Y ) {
                     // The apple is right next to the snake head.
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.RIGHT );
-                } else if ( snakesHeadPosition.y - 1 < applePosition.y - 1 && IsValueEven( applePosition.x - 1 ) ) {
+                } else if ( snakesHeadPosition.Y - 1 < applePosition.Y - 1 && IsValueEven( applePosition.X - 1 ) ) {
                     // Snakes head is above the apple
                     // AND
                     // the apple is in a column with an even number like 2, 4, 6, 8, ... 
                     // The direction in "even columns" in down, so we can additionally lead the snake into this apple containing column
                     // because the then following non-shortcut path (aka "normal" Hamiltonian Cylce) is going to lead the snake into the apple.
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.RIGHT );
-                } else if ( snakesHeadPosition.y - 1 > applePosition.y - 1 && !IsValueEven( applePosition.x - 1 ) ) {
+                } else if ( snakesHeadPosition.Y - 1 > applePosition.Y - 1 && !IsValueEven( applePosition.X - 1 ) ) {
                     // Snakes head is below the apple ... -> See previous comment.
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.RIGHT );
-                } else if ( applePosition.y == 0 ) {
+                } else if ( applePosition.Y == 0 ) {
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.RIGHT );
                     // snake head is no in the same column as the apple.
                     // Lead the snake up into the apple.
-                    for ( int y = snakesHeadPosition.y - 1; y > 0; y-- ) {
+                    for ( int y = snakesHeadPosition.Y - 1; y > 0; y-- ) {
                         returnDatas.ShotCutMoveDirections.Add( DirectionEvent.UP );
                     }
                 }
             } else {
                 // The snake is to the right of the apple.
                 // The snake should be lead to row 0.
-                if ( IsValueEven( snakesHeadPosition.x - 1 ) ) {
+                if ( IsValueEven( snakesHeadPosition.X - 1 ) ) {
                     // Snake head is a "even column". 
                     // The move direction of "even columns" is down, so go one step to the right, to a "odd column.
                     // The move direction of "odd  columns" is up.
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.RIGHT );
                 }
 
-                for ( int y = snakesHeadPosition.y - 1; y > 0; y-- ) {
+                for ( int y = snakesHeadPosition.Y - 1; y > 0; y-- ) {
                     returnDatas.ShotCutMoveDirections.Add( DirectionEvent.UP );
                 }
             }
@@ -185,12 +188,12 @@ namespace snake
                 var pointA = returnDatas.SnakePositions[ i ];
                 var pointB = returnDatas.SnakePositions[ i + 1 ];
 
-                if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.x, pointA.y ] == 0 ) {
-                    if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.x, pointB.y ] != HamiltonianCycleData.Data.PointToSequenceNumber.Length - 1 ) {
+                if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.X, pointA.Y ] == 0 ) {
+                    if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.X, pointB.Y ] != HamiltonianCycleData.Data.PointToSequenceNumber.Length - 1 ) {
                         return false;
                     }
 
-                } else if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.x, pointA.y ] - 1 != HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.x, pointB.y ] ) {
+                } else if ( HamiltonianCycleData.Data.PointToSequenceNumber[ pointA.X, pointA.Y ] - 1 != HamiltonianCycleData.Data.PointToSequenceNumber[ pointB.X, pointB.Y ] ) {
                     return false;
                 }
             }

@@ -11,6 +11,7 @@ namespace snake
     {
         public string Name { get; set; }
         public int Score { get; set; }
+        public Difficulty difficulty { get; set; }
     }
 
     [Serializable]
